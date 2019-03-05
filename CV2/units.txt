@@ -1,0 +1,9 @@
+pesak	utok 1		obrana 2		zivoty 10            		   
+kopitnik  obrana 3 utok 1 zivoty 8      
+
+     
+
+rytir zivoty 20   obrana 5      utok 5                             
+
+hrdina zivoty 25 utok 		6 		obrana 2 
+zenista   utok 0  obrana 1zivoty 15
