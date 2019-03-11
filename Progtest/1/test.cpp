@@ -28,353 +28,207 @@ const uint16_t ENDIAN_BIG    = 0x4d4d;
 
 #endif /* __PROGTEST__ */
 
-class Pixel {
-  public:
-    Pixel();
-    void Set(int r, int g, int b, int a);
-    int GetR() {return _r;};
-    int GetG() {return _g;};
-    int GetB() {return _b;};
-    int GetA() {return _a;};
-    static bool Compare(Pixel & a, Pixel & b);
-  private:
-    int _r;
-    int _g;
-    int _b;
-    int _a;
-};
-
-Pixel::Pixel(){
-  _r = 0;
-  _g = 0;
-  _b = 0;
-  _a = 0;
-}
-
-void Pixel::Set(int r, int g, int b, int a){
-  _r = r;
-  _g = g;
-  _b = b;
-  _a = a;
-}
-
-bool Pixel::Compare(Pixel & a, Pixel & b){
-  if(a._a != b._a || a._b != b._b || a._g != b._g || a._r != b._r)
-    return false;
-  return true;
-}
-
-
 int GetInt8(const char m1){
   return (int)m1;
 }
 
 uint16_t GetUint16(const char m1, const char m2){
-  uint16_t res = (uint16_t)m1 << 8;
-  res += (uint16_t)m2;
+  uint16_t res = (int)(uint8_t)m1 << 8;
+  res += (int)(uint8_t)m2;
   return res;
 }
 
-char GetSCharUint16(uint16_t x){
-  return (x >> 8);
-}
-
-char GetFCharUint16(uint16_t x){
-  return x;
-}
-
 class Image {
-  private:
-    const uint16_t ENDIAN_LITTLE_G1 =     0x0000;
-    const uint16_t ENDIAN_LITTLE_G8 =     0x000c;
-    const uint16_t ENDIAN_LITTLE_G16 =    0x0010;
-    const uint16_t ENDIAN_LITTLE_RGB1 =   0x0002;
-    const uint16_t ENDIAN_LITTLE_RGB8 =   0x000e;
-    const uint16_t ENDIAN_LITTLE_RGB16 =  0x0012;
-    const uint16_t ENDIAN_LITTLE_RGBA1 =  0x0003;
-    const uint16_t ENDIAN_LITTLE_RGBA8 =  0x000f;
-    const uint16_t ENDIAN_LITTLE_RGBA16 = 0x0013;
-    
-    Pixel ** _bitmap;
+  private:    
     uint16_t _w;
     uint16_t _h;
-    uint16_t _wFormat;
-    int _channels;
-    int _bits;
-    uint16_t _type;
     int _fileLenght;
-    char * memblock;
+    int _sampleLenght;
+    char * _memHeader;
+    char * _memData;
   public:
-    Image() { _w = 0; _h = 0; _channels = 0; _bits = 0; _type = 0; memblock = NULL; _bitmap = NULL; };
-    bool LoadHeader(const char * memblock);
-    bool LoadImage(const char * src);
-    bool SaveImage(const char * dst) const;
-    void FlipHorizontal();
-    void FlipVertical();
-    void Print() const;
-    static bool Compare(Image & img1, Image & img2);
-    ~Image();
-};
 
+    Image() { 
+      _w = 0; 
+      _h = 0; 
+      _fileLenght = 0;
+      _sampleLenght = 0;
 
-bool Image::LoadHeader(const char * memblock){
-  uint16_t type = GetUint16(memblock[0], memblock[1]);
-  if(type != ENDIAN_LITTLE && type != ENDIAN_BIG)
-    return false;
-  _type = type;
-  if(type == ENDIAN_LITTLE){
-
-    uint16_t w = GetUint16(memblock[3], memblock[2]);
-    if(w <= 0)
-      return false;
-    _w = w;
-
-    uint16_t h = GetUint16(memblock[5], memblock[4]);
-    if(h <= 0)
-      return false;
-    _h = h;    
-
-    uint16_t tmp = GetUint16(memblock[7], memblock[6]);
-    if(tmp == ENDIAN_LITTLE_G1)
-    {
-      _channels = 1;
-      _bits = 1;
-    }else if(tmp == ENDIAN_LITTLE_G8)
-    {
-      _channels = 1;
-      _bits = 8;
-    }else if(tmp == ENDIAN_LITTLE_G16)
-    {
-      _channels = 1;
-      _bits = 16;
-    }else if(tmp == ENDIAN_LITTLE_RGB1)
-    {
-      _channels = 3;
-      _bits = 1;
-    }else if(tmp == ENDIAN_LITTLE_RGB8)
-    {
-      _channels = 3;
-      _bits = 8;
-    }else if(tmp == ENDIAN_LITTLE_RGB16)
-    {
-      _channels = 3;
-      _bits = 16;
-    }else if(tmp == ENDIAN_LITTLE_RGBA1)
-    {
-      _channels = 4;
-      _bits = 1;
-    }else if(tmp == ENDIAN_LITTLE_RGBA8)
-    {
-      _channels = 4;
-      _bits = 8;
-    }else if(tmp == ENDIAN_LITTLE_RGBA16)
-    {
-      _channels = 4;
-      _bits = 16;
-    }else{
-      return false;
+      _memHeader = NULL; 
+      _memData = NULL; 
     }
-    _wFormat = GetUint16(memblock[7], memblock[6]);
-  }else{
-    return false;
-  }
 
-  return true;
-}
+    bool ParseHeader(){ 
+      uint16_t type = GetUint16(_memHeader[0], _memHeader[1]);
+      uint16_t tmp = 0;
+      if(type != ENDIAN_LITTLE && type != ENDIAN_BIG)
+        return false;
+        
+      if(type == ENDIAN_LITTLE){
+        uint16_t w = GetUint16(_memHeader[3], _memHeader[2]);
+        if(w <= 0)
+          return false;
+        _w = w;
 
-void Image::FlipHorizontal(){
-  int r = 0;
-  int g = 0;
-  int b = 0;
-  int a = 0;
-  for(int y = 0; y < _h; y++){
-    for(int x = 0; x < ceil(_w/2); x++){
-      
-       r = _bitmap[x][y].GetR();
-       g = _bitmap[x][y].GetG();
-       b = _bitmap[x][y].GetB();
-       a = _bitmap[x][y].GetA();
-      _bitmap[x][y].Set(_bitmap[_w-x-1][y].GetR(),_bitmap[_w-x-1][y].GetG(),_bitmap[_w-x-1][y].GetB(),_bitmap[_w-x-1][y].GetA());
-      _bitmap[_w-x-1][y].Set(r,g,b,a);
-    }
-  }
-}
+        uint16_t h = GetUint16(_memHeader[5], _memHeader[4]);
+        if(h <= 0)
+          return false;
+        _h = h;    
 
-void Image::FlipVertical(){
-  int r = 0;
-  int g = 0;
-  int b = 0;
-  int a = 0;
-  for(int y = 0; y < ceil(_h/2); y++){
-    for(int x = 0; x < _w; x++){
-      
-       r = _bitmap[x][y].GetR();
-       g = _bitmap[x][y].GetG();
-       b = _bitmap[x][y].GetB();
-       a = _bitmap[x][y].GetA();
-      _bitmap[x][y].Set(_bitmap[x][_h-y-1].GetR(),_bitmap[x][_h-y-1].GetG(),_bitmap[x][_h-y-1].GetB(),_bitmap[x][_h-y-1].GetA());
-      _bitmap[x][_h-y-1].Set(r,g,b,a);
-    }
-  }
-}
+        tmp = GetUint16(_memHeader[7], _memHeader[6]);
+      }else{
+        uint16_t w = GetUint16(_memHeader[2], _memHeader[3]);
+        if(w <= 0)
+          return false;
+        _w = w;
 
-void Image::Print() const{
-  for(int y = 0; y < _h; y++){
-    for(int x = 0; x < _w; x++){
-      cout << setw(3) << _bitmap[x][y].GetR();
-      cout << setw(2) << _bitmap[x][y].GetG();
-      cout << setw(2) << _bitmap[x][y].GetB();
-      cout << setw(2) << _bitmap[x][y].GetA();
-    }
-    cout << endl;
-  }
-  cout << "---------------------" << endl;
-}
+        uint16_t h = GetUint16(_memHeader[4], _memHeader[5]);
+        if(h <= 0)
+          return false;
+        _h = h;    
 
-bool Image::SaveImage(const char * dst) const{
-  ofstream out;
-  
-  out.open(dst, ios_base::binary);
-  if(!out.is_open() || out.fail() || out.eof() || out.bad()){
-    out.close();
-    return false;
-  }
-  
- 
-  out << GetFCharUint16(_type) << GetSCharUint16(_type) << GetFCharUint16(_w) << GetSCharUint16(_w) << GetFCharUint16(_h) << GetSCharUint16(_h) << GetFCharUint16(_wFormat) << GetSCharUint16(_wFormat);
-
-  if(!out.is_open() || out.fail() || out.eof() || out.bad()|| !out.good()){
-    out.close();
-    return false;
-  }
-
-  
-  for(int y = 0; y < _h; y++){
-    for(int x = 0; x < _w; x++){
-      if(_channels == 1){
-        out << (char)_bitmap[x][y].GetG();
-      }else if(_channels == 3){
-        out << (char)_bitmap[x][y].GetR();
-        out << (char)_bitmap[x][y].GetG();
-        out << (char)_bitmap[x][y].GetB();
-      }else if(_channels == 4){
-        out << (char)_bitmap[x][y].GetR();
-        out << (char)_bitmap[x][y].GetG();
-        out << (char)_bitmap[x][y].GetB();
-        out << (char)_bitmap[x][y].GetA();
+        tmp = GetUint16(_memHeader[6], _memHeader[7]);
       }
-      if(!out.is_open() || out.fail() || out.eof() || out.bad()|| !out.good()){
+      int chann = 0;
+      int bits = 0;
+      if((tmp & 3) == 0){
+        chann = 1;
+      }else if((tmp & 3) == 2){
+        chann = 3;
+      }else if((tmp & 3) == 3){
+        chann = 4;
+      }else{
+        return false;
+      }
+
+      if(((tmp >> 2) & 7) == 0){
+        return false;
+      }else if(((tmp >> 2) & 7) == 3){
+        bits = 1; // 8
+      }else if(((tmp >> 2) & 7) == 4){
+        bits = 2; // 16
+        //return false;
+      }else{
+        return false;
+      }
+
+      _sampleLenght = chann * bits;
+      cout << "Loaded: " <<  "|" << _w  << "/" << _h << endl;
+      return true;
+    }
+
+    bool LoadImage(const char * src){
+      
+      ifstream inp;
+      inp.open(src, ios_base::binary);
+      if(!inp.is_open() || inp.fail() || inp.eof() || inp.bad()|| !inp.good()){
+        inp.close();
+        return false;
+      }
+
+      inp.seekg ( 0, inp.end );
+      _fileLenght = inp.tellg();
+      inp.seekg ( 0, inp.beg );
+      if(!inp || inp.fail() || inp.eof() || inp.bad() || !inp.good()){
+        inp.close();
+        return false;
+      }
+      if(_fileLenght < 8){
+        inp.close();
+        return false;
+      }
+
+      _memHeader = new char [8];
+      inp.read(_memHeader, 8);
+
+      if(!inp || inp.fail() || inp.eof() || inp.bad() || !inp.good()){
+        inp.close();
+        delete[] _memHeader;
+        return false;
+      }
+
+      cout << "Parsing header: " << src << endl;
+      if(!ParseHeader()){
+        inp.close();
+        return false;
+      }
+      cout << "Parsed header: " << src << endl;
+
+      if(_w <= 0 || _h <= 0){
+        inp.close();
+        return false;
+      }
+      cout << "Done: " <<  _fileLenght - 8 - _w * _h * _sampleLenght << endl;
+
+      if(_fileLenght - 8 - _w*_h*_sampleLenght != 0){
+        inp.close();
+        return false;
+      }
+
+      _memData = new char [_fileLenght-8];
+      inp.read(_memData, _fileLenght-8);
+      if(!inp || inp.fail() || inp.eof() || inp.bad() || !inp.good()){
+        inp.close();
+        return false;
+      }
+      inp.close();
+      return true;
+    }
+
+    bool SaveImage(const char * dst) const{
+      ofstream out;
+  
+      out.open(dst, ios_base::binary);
+      if(!out.is_open() || out.fail() || out.eof() || out.bad()){
         out.close();
         return false;
       }
-    }
-  }
 
-  out.close();
-  return true;
-}
-
-bool Image::LoadImage(const char * src){  
-  ifstream inp;
-  inp.open(src, ios_base::binary);
-  if(!inp.is_open() || inp.fail() || inp.eof() || inp.bad()|| !inp.good()){
-    inp.close();
-    return false;
-  }
-  
-  inp.seekg ( 0, inp.end );
-  int streamSize = inp.tellg();
-  if(!inp || inp.fail() || inp.eof() || inp.bad() || !inp.good()){
-    inp.close();
-    return false;
-  }
-  if(streamSize < 8){
-    inp.close();
-    return false;
-  }
-  inp.seekg ( 0, inp.beg );
-  
-  if(!inp || inp.fail() || inp.eof() || inp.bad()|| !inp.good()){
-    inp.close();
-    return false;
-  }
-
-  memblock = new char [streamSize];
-  inp.read( memblock, streamSize );
-
-  if(!inp || inp.fail() || inp.eof() || inp.bad()|| !inp.good()){
-    inp.close();
-    return false;
-  }
-
-  inp.close();
-  _fileLenght = streamSize;
-
-  if(!LoadHeader(memblock)) 
-    return false; 
-  
-  int checkSum =  streamSize - 8 - _w*_h*_channels;
-  if(checkSum != 0){
-    _w = 0;
-    _h = 0;
-    _bits = 0;
-    _channels = 0;
-    return false;
-  }
-  
-  
-  _bitmap = new Pixel*[_w];
-  
-  for(int i = 0; i < _w; i++)
-    _bitmap[i] = new Pixel[_h];
-
-  int readIndex = 8;
-  for(int y = 0; y < _h; y++){
-    for(int x = 0; x < _w; x++){
-      if(_channels == 1){
-        _bitmap[x][y].Set(-1,GetInt8(memblock[readIndex]),-1,-1);
-        readIndex++;
-      }
-      if(_channels == 3){
-        _bitmap[x][y].Set(GetInt8(memblock[readIndex]),GetInt8(memblock[readIndex+1]),GetInt8(memblock[readIndex+2]),-1);
-        readIndex+=3;
-      }    
-      if(_channels == 4){
-        _bitmap[x][y].Set(GetInt8(memblock[readIndex]),GetInt8(memblock[readIndex+1]),GetInt8(memblock[readIndex+2]),GetInt8(memblock[readIndex+3]));
-        readIndex+=4;
-      }    
-    }
-  }
-  
-  //cout << "Loaded: " << _w << " " << _h << " " << _channels << " " << _bits << endl; 
-  return true;
-}
-
-Image::~Image(){
-  if(_w <= 0 || _h <= 0){
-    return;
-  }
-  for(int i = 0; i < _w; ++i){
-    delete[] _bitmap[i];
-  }
-  if(_h > 0)
-    delete[] _bitmap;
-  delete[] memblock;
-}
-
-bool Image::Compare(Image & img1, Image & img2){
-  if(img1._h != img2._h || img1._w != img2._w)
-    return false;
-
-  for(int y = 0; y < img1._h; y++){
-    for(int x = 0; x < img1._w; x++){
-      if(!img1._bitmap[x][y].Compare(img1._bitmap[x][y], img2._bitmap[x][y]))
+      out.write(_memHeader, 8);
+      out.write(_memData, _fileLenght - 8);
+      if(!out.is_open() || out.fail() || out.eof() || out.bad()){
+        out.close();
         return false;
+      }
+      out.close();
+      return true;
     }
-  }
-  return true;
-}
 
+    char * GetData(int j, int i){
+      return &_memData[i * _w * _sampleLenght + j * _sampleLenght];
+    } 
+
+    void FlipHorizontal(){
+      char * tmp = new char[_sampleLenght];
+      for(int x = 0; x < _w/2; x++){
+        for(int y = 0; y < _h; y++){
+          memcpy(tmp, GetData(x,y), _sampleLenght);
+          memcpy(GetData(x,y), GetData(_w-x-1, y), _sampleLenght);
+          memcpy(GetData(_w-x-1, y), tmp, _sampleLenght);          
+        }
+      }
+      delete[] tmp;
+    }
+
+    void FlipVertical(){
+      char * tmp = new char[_sampleLenght];
+      for(int x = 0; x < _w; x++){
+        for(int y = 0; y < _h/2; y++){
+          memcpy(tmp, GetData(x,y), _sampleLenght);
+          memcpy(GetData(x,y), GetData(x, _h-y-1), _sampleLenght);
+          memcpy(GetData(x, _h-y-1), tmp, _sampleLenght);          
+        }
+      }
+      delete[] tmp;
+    }
+
+    ~Image(){
+      if(_memHeader != NULL)
+        delete[] _memHeader;
+      if(_memData != NULL)
+        delete[] _memData;
+    }
+};
 
 bool flipImage ( const char  * srcFileName,
                  const char  * dstFileName,
@@ -382,11 +236,10 @@ bool flipImage ( const char  * srcFileName,
                  bool          flipVertical )
 {
   Image img = Image();
-  cout << "Loading ";
   if(!img.LoadImage(srcFileName))
     return false;
-  cout << "Loaded";
   //img.Print();
+  
   if(flipHorizontal)
     img.FlipHorizontal();
   if(flipVertical)
@@ -395,6 +248,7 @@ bool flipImage ( const char  * srcFileName,
   cout << endl;
   if(!img.SaveImage(dstFileName))
     return false;
+    
   return true;
 }
 
@@ -402,17 +256,37 @@ bool flipImage ( const char  * srcFileName,
 bool identicalFiles ( const char * fileName1,
                       const char * fileName2 )
 {
-  Image img1 = Image();
-  cout << "Test: ";
-  if(!img1.LoadImage(fileName1))
-    return false;
-  Image img2 = Image();
-  if(!img2.LoadImage(fileName1))
-    return false;
+  char * i1;
+  char * i2;
   
-  cout << img1.Compare(img2, img1) << endl;
+  ifstream inp1;
+  inp1.open(fileName1, ios_base::binary);
 
-  return img1.Compare(img1, img2);
+  inp1.seekg ( 0, inp1.end );
+  int l1 = inp1.tellg();
+  inp1.seekg ( 0, inp1.beg );
+
+  i1 = new char [l1];
+  inp1.read(i1, l1);
+  inp1.close();
+
+  
+  ifstream inp2;
+  inp2.open(fileName2, ios_base::binary);
+
+  inp2.seekg ( 0, inp2.end );
+  int l2 = inp2.tellg();
+  inp2.seekg ( 0, inp2.beg );
+
+  i2 = new char [l2];
+  inp2.read(i2, l2);
+  inp2.close();
+  if(l1 != l2)
+    return false;
+  cout << memcmp(i1, i2, l1) << endl;
+  if(memcmp(i1, i2, l1))
+    return false;
+  return true;
 }
 
 int main ( void )
@@ -450,8 +324,10 @@ int main ( void )
   
   assert ( !flipImage ( "hodn.img", "output_hodn.img", false, true ));
 
+  assert( flipImage("tst", "out", true, true));
+
   assert ( ! flipImage ( "input_09.img", "output_09.img", true, false ) );
-/*
+
   // extra inputs (optional & bonus tests)
   assert ( flipImage ( "extra_input_00.img", "extra_out_00.img", true, false )
            && identicalFiles ( "extra_out_00.img", "extra_ref_00.img" ) );
@@ -469,6 +345,7 @@ int main ( void )
            && identicalFiles ( "extra_out_06.img", "extra_ref_06.img" ) );
   assert ( flipImage ( "extra_input_07.img", "extra_out_07.img", false, true )
            && identicalFiles ( "extra_out_07.img", "extra_ref_07.img" ) );
+  /*
   assert ( flipImage ( "extra_input_08.img", "extra_out_08.img", true, false )
            && identicalFiles ( "extra_out_08.img", "extra_ref_08.img" ) );
   assert ( flipImage ( "extra_input_09.img", "extra_out_09.img", false, true )
