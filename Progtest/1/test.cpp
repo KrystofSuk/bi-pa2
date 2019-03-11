@@ -105,7 +105,7 @@ class Image {
     int _fileLenght;
     char * memblock;
   public:
-    Image() { _w = 0; _h = 0; _channels = 0; _bits = 0; _type = 0; };
+    Image() { _w = 0; _h = 0; _channels = 0; _bits = 0; _type = 0; memblock = NULL; _bitmap = NULL; };
     bool LoadHeader(const char * memblock);
     bool LoadImage(const char * src);
     bool SaveImage(const char * dst) const;
@@ -115,6 +115,7 @@ class Image {
     static bool Compare(Image & img1, Image & img2);
     ~Image();
 };
+
 
 bool Image::LoadHeader(const char * memblock){
   uint16_t type = GetUint16(memblock[0], memblock[1]);
@@ -244,7 +245,6 @@ bool Image::SaveImage(const char * dst) const{
 
   if(!out.is_open() || out.fail() || out.eof() || out.bad()|| !out.good()){
     out.close();
-    
     return false;
   }
 
@@ -351,7 +351,7 @@ bool Image::LoadImage(const char * src){
 }
 
 Image::~Image(){
-  if(_w < 0 || _h < 0){
+  if(_w <= 0 || _h <= 0){
     return;
   }
   for(int i = 0; i < _w; ++i){
