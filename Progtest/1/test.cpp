@@ -28,16 +28,23 @@ const uint16_t ENDIAN_BIG    = 0x4d4d;
 
 #endif /* __PROGTEST__ */
 
-int GetInt8(const char m1){
-  return (int)m1;
-}
-
-uint16_t GetUint16(const char m1, const char m2){
-  uint16_t res = (int)(uint8_t)m1 << 8;
-  res += (int)(uint8_t)m2;
+/**
+ * @brief Get the Uint 16 of object
+ * 
+ * @param input1 Left 8 Bits
+ * @param input2 Right 8 Bits
+ * @return uint16_t 16 Bit int from inputs
+ */
+uint16_t GetUint16( const char input1, const char input2 ){
+  uint16_t res = ( int )( uint8_t )input1 << 8;
+  res += ( int )( uint8_t )input2;
   return res;
 }
 
+/**
+ * @brief Image class for manipulation of image data
+ * 
+ */
 class Image {
   private:    
     uint16_t _w;
@@ -45,83 +52,103 @@ class Image {
     int _fileLenght;
     int _sampleLenght;
     char * _memHeader;
-    char * _memData;
+    char * _memData;    
   public:
-
+    /**
+     * @brief Construct a new Image object
+     * 
+     */
     Image() { 
       _w = 0; 
       _h = 0; 
       _fileLenght = 0;
       _sampleLenght = 0;
-
       _memHeader = NULL; 
       _memData = NULL; 
     }
 
+    /**
+     * @brief Method for parsing loaded header of file
+     * 
+     * @return true Header was parsed ok
+     * @return false Error in header
+     */
     bool ParseHeader(){ 
-      uint16_t type = GetUint16(_memHeader[0], _memHeader[1]);
-      uint16_t tmp = 0;
-      if(type != ENDIAN_LITTLE && type != ENDIAN_BIG)
+      uint16_t type = GetUint16( _memHeader[ 0 ], _memHeader[ 1 ] );
+      uint16_t format = 0;
+
+      if( type != ENDIAN_LITTLE && type != ENDIAN_BIG )
         return false;
         
-      if(type == ENDIAN_LITTLE){
-        uint16_t w = GetUint16(_memHeader[3], _memHeader[2]);
+      if( type == ENDIAN_LITTLE ){
+        uint16_t w = GetUint16( _memHeader[ 3 ], _memHeader[ 2 ] );
         if(w <= 0)
           return false;
         _w = w;
 
-        uint16_t h = GetUint16(_memHeader[5], _memHeader[4]);
-        if(h <= 0)
+        uint16_t h = GetUint16( _memHeader[ 5 ], _memHeader[ 4 ] );
+        if( h <= 0 )
           return false;
+          
         _h = h;    
 
-        tmp = GetUint16(_memHeader[7], _memHeader[6]);
-      }else{
-        uint16_t w = GetUint16(_memHeader[2], _memHeader[3]);
-        if(w <= 0)
+        format = GetUint16( _memHeader[ 7 ], _memHeader[ 6 ] );
+      } else{
+        uint16_t w = GetUint16( _memHeader[ 2 ], _memHeader[ 3 ] );
+        if( w <= 0 )
           return false;
         _w = w;
 
-        uint16_t h = GetUint16(_memHeader[4], _memHeader[5]);
-        if(h <= 0)
+        uint16_t h = GetUint16( _memHeader[ 4 ], _memHeader[ 5 ] );
+        if( h <= 0 )
           return false;
         _h = h;    
 
-        tmp = GetUint16(_memHeader[6], _memHeader[7]);
+        format = GetUint16( _memHeader[ 6 ], _memHeader[ 7 ] );
       }
-      int chann = 0;
-      int bits = 0;
-      if((tmp & 3) == 0){
-        chann = 1;
-      }else if((tmp & 3) == 2){
-        chann = 3;
-      }else if((tmp & 3) == 3){
-        chann = 4;
-      }else{
+
+      int channels = 0;
+      int bytes = 0;
+
+      //Channels check
+      if( ( format & 3 ) == 0 ){
+        channels = 1;
+      } else if( ( format & 3 ) == 2 ){
+        channels = 3;
+      } else if( ( format & 3 ) == 3 ){
+        channels = 4;
+      } else{
         return false;
       }
 
-      if(((tmp >> 2) & 7) == 0){
+      //Num of Bytes check
+      if( ( ( format >> 2 ) & 7 ) == 0 ){
         return false;
-      }else if(((tmp >> 2) & 7) == 3){
-        bits = 1; // 8
-      }else if(((tmp >> 2) & 7) == 4){
-        bits = 2; // 16
-        //return false;
-      }else{
+      } else if( ( ( format >> 2 ) & 7 ) == 3 ){
+        bytes = 1;
+      } else if( ( ( format >> 2 ) & 7 ) == 4 ){
+        bytes = 2;
+      } else{
         return false;
       }
 
-      _sampleLenght = chann * bits;
-      cout << "Loaded: " <<  "|" << _w  << "/" << _h << endl;
+      _sampleLenght = channels * bytes;
+      
       return true;
     }
 
+    /**
+     * @brief Method for loading image data, which loads header and content of image
+     * 
+     * @param src Filepath of image
+     * @return true Image was loaded and stored in object
+     * @return false Image loading failed
+     */
     bool LoadImage(const char * src){
       
-      ifstream inp;
-      inp.open(src, ios_base::binary);
-      if(!inp.is_open() || inp.fail() || inp.eof() || inp.bad()|| !inp.good()){
+      ifstream inp ( src, ios_base::binary );
+
+      if( !inp.is_open() || !inp.good() ){
         inp.close();
         return false;
       }
@@ -129,168 +156,242 @@ class Image {
       inp.seekg ( 0, inp.end );
       _fileLenght = inp.tellg();
       inp.seekg ( 0, inp.beg );
-      if(!inp || inp.fail() || inp.eof() || inp.bad() || !inp.good()){
-        inp.close();
-        return false;
-      }
-      if(_fileLenght < 8){
+
+      if( !inp  || !inp.good() ){
         inp.close();
         return false;
       }
 
-      _memHeader = new char [8];
-      inp.read(_memHeader, 8);
+      //Header lenght check
+      if( _fileLenght < 8 ){
+        inp.close();
+        return false;
+      }
 
-      if(!inp || inp.fail() || inp.eof() || inp.bad() || !inp.good()){
+      _memHeader = new char [ 8 ];
+      inp.read( _memHeader, 8 );
+
+      if( !inp || !inp.good() ){
         inp.close();
         delete[] _memHeader;
         return false;
       }
 
       cout << "Parsing header: " << src << endl;
-      if(!ParseHeader()){
+
+      if( !ParseHeader() ){
         inp.close();
         return false;
       }
+
       cout << "Parsed header: " << src << endl;
+      cout << left << setw(10) << "Width" << setw(10) << "Height" << setw(15) << "Sample Bytes" << setw(15) << "File Bytes" << endl;
+      cout << left << setw(10) << _w << setw(10) << _h << setw(15) << _sampleLenght << setw(15) << _fileLenght << right << endl;
 
       if(_w <= 0 || _h <= 0){
         inp.close();
         return false;
       }
-      cout << "Done: " <<  _fileLenght - 8 - _w * _h * _sampleLenght << endl;
+      
+      int checkSum = _fileLenght - 8 - _w * _h * _sampleLenght;
+      cout << "Checksum: " << checkSum  << endl;
 
-      if(_fileLenght - 8 - _w*_h*_sampleLenght != 0){
+      //Checksum validation
+      if( checkSum != 0 ){
         inp.close();
         return false;
       }
 
-      _memData = new char [_fileLenght-8];
-      inp.read(_memData, _fileLenght-8);
-      if(!inp || inp.fail() || inp.eof() || inp.bad() || !inp.good()){
+      _memData = new char [ _fileLenght - 8 ];
+      inp.read( _memData, _fileLenght - 8 );
+
+      if( !inp || !inp.good() ){
         inp.close();
         return false;
       }
+
       inp.close();
       return true;
     }
 
-    bool SaveImage(const char * dst) const{
-      ofstream out;
-  
-      out.open(dst, ios_base::binary);
-      if(!out.is_open() || out.fail() || out.eof() || out.bad()){
+    /**
+     * @brief Method for saving image to disk
+     * 
+     * @param dst Destination file path
+     * @return true Image was saved 
+     * @return false Image saving failed
+     */
+    bool SaveImage( const char * dst ) const{
+      ofstream out ( dst, ios_base::binary );
+      
+      if( !out.is_open() || !out.good() ){
         out.close();
         return false;
       }
 
-      out.write(_memHeader, 8);
-      out.write(_memData, _fileLenght - 8);
-      if(!out.is_open() || out.fail() || out.eof() || out.bad()){
+      out.write( _memHeader, 8 );
+      out.write( _memData, _fileLenght - 8 );
+
+      if( !out || !out.good() ){
         out.close();
         return false;
       }
+
       out.close();
       return true;
     }
 
-    char * GetData(int j, int i){
-      return &_memData[i * _w * _sampleLenght + j * _sampleLenght];
+    /**
+     * @brief Get the pointer to start of datablock at specific position
+     * 
+     * @param j x position of image
+     * @param i y position of image
+     * @return char* Pointer to start of datablock
+     */
+    char * GetData( int j, int i ){
+      return &_memData[ i * _w * _sampleLenght + j * _sampleLenght ];
     } 
 
+    /**
+     * @brief Flipping image horizontaly (by x axis)
+     * 
+     */
     void FlipHorizontal(){
-      char * tmp = new char[_sampleLenght];
-      for(int x = 0; x < _w/2; x++){
-        for(int y = 0; y < _h; y++){
-          memcpy(tmp, GetData(x,y), _sampleLenght);
-          memcpy(GetData(x,y), GetData(_w-x-1, y), _sampleLenght);
-          memcpy(GetData(_w-x-1, y), tmp, _sampleLenght);          
+      char * tmp = new char[ _sampleLenght ];
+      for( int x = 0; x < _w / 2; x++ ){
+        for( int y = 0; y < _h; y++ ){
+          memcpy( tmp, GetData( x, y ), _sampleLenght );
+          memcpy( GetData( x, y ), GetData( _w - x - 1, y ), _sampleLenght );
+          memcpy( GetData( _w - x - 1, y ), tmp, _sampleLenght );          
         }
       }
       delete[] tmp;
     }
 
+    /**
+     * @brief Flipping image verticaly (by y axis)
+     * 
+     */
     void FlipVertical(){
-      char * tmp = new char[_sampleLenght];
-      for(int x = 0; x < _w; x++){
-        for(int y = 0; y < _h/2; y++){
-          memcpy(tmp, GetData(x,y), _sampleLenght);
-          memcpy(GetData(x,y), GetData(x, _h-y-1), _sampleLenght);
-          memcpy(GetData(x, _h-y-1), tmp, _sampleLenght);          
+      char * tmp = new char[ _sampleLenght ];
+      for( int x = 0; x < _w; x++ ){
+        for( int y = 0; y < _h / 2; y++ ){
+          memcpy( tmp, GetData(x,y), _sampleLenght);
+          memcpy( GetData( x, y ), GetData( x, _h - y - 1 ), _sampleLenght );
+          memcpy( GetData( x, _h - y - 1 ), tmp, _sampleLenght );          
         }
       }
       delete[] tmp;
     }
 
+    /**
+     * @brief Destructor of the Image object
+     * 
+     */
     ~Image(){
-      if(_memHeader != NULL)
+      if( _memHeader != NULL )
         delete[] _memHeader;
-      if(_memData != NULL)
+      if( _memData != NULL )
         delete[] _memData;
     }
 };
 
+/**
+ * @brief Flipping function
+ * 
+ * @param srcFileName Path to source image
+ * @param dstFileName Path for saving result image
+ * @param flipHorizontal Flipping horizontal 
+ * @param flipVertical Flipping vertical
+ * @return true Image was loaded, parsed, flipped by parameters and saved 
+ * @return false Image failed to do either load or save
+ */
 bool flipImage ( const char  * srcFileName,
                  const char  * dstFileName,
                  bool          flipHorizontal,
                  bool          flipVertical )
-{
+{  
+  cout << "Loading Image" << endl;
+
   Image img = Image();
-  if(!img.LoadImage(srcFileName))
+  if( !img.LoadImage( srcFileName ) )
     return false;
-  //img.Print();
-  
-  if(flipHorizontal)
+
+  cout << "Loaded Image" << endl;
+
+  cout << "Flipping Image" << endl;
+
+  if( flipHorizontal )
     img.FlipHorizontal();
-  if(flipVertical)
+  if( flipVertical )
     img.FlipVertical();
-  //img.Print();
-  cout << endl;
-  if(!img.SaveImage(dstFileName))
+
+  cout << "Flipped Image" << endl;
+  
+  cout << "Saving Image" << endl;
+
+  if( !img.SaveImage( dstFileName ) )
     return false;
-    
+
+  cout << "Saved Image" << endl;
+  cout << "----------" << endl;
+
   return true;
 }
 
 #ifndef __PROGTEST__
+/**
+ * @brief Testing method for two files using memcmp
+ * 
+ * @param fileName1 First file
+ * @param fileName2 Second file
+ * @return true Files are identical
+ * @return false Files are't identical
+ */
 bool identicalFiles ( const char * fileName1,
                       const char * fileName2 )
 {
   char * i1;
   char * i2;
   
-  ifstream inp1;
-  inp1.open(fileName1, ios_base::binary);
+  ifstream inp1 ( fileName1, ios_base::binary );
+  ifstream inp2 ( fileName2, ios_base::binary );
 
   inp1.seekg ( 0, inp1.end );
   int l1 = inp1.tellg();
   inp1.seekg ( 0, inp1.beg );
+  
+  inp2.seekg ( 0, inp2.end );
+  int l2 = inp2.tellg();
+  inp2.seekg ( 0, inp2.beg );
+
+  if(l1 != l2){
+    return false;
+  }
 
   i1 = new char [l1];
   inp1.read(i1, l1);
   inp1.close();
 
-  
-  ifstream inp2;
-  inp2.open(fileName2, ios_base::binary);
-
-  inp2.seekg ( 0, inp2.end );
-  int l2 = inp2.tellg();
-  inp2.seekg ( 0, inp2.beg );
-
   i2 = new char [l2];
   inp2.read(i2, l2);
   inp2.close();
-  if(l1 != l2)
+
+  if(memcmp(i1, i2, l1)){
+    delete[] i1;
+    delete[] i2;
     return false;
-  cout << memcmp(i1, i2, l1) << endl;
-  if(memcmp(i1, i2, l1))
-    return false;
+  }
+  
+  delete[] i1;
+  delete[] i2;
   return true;
 }
 
 int main ( void )
 {
+  //Test asserts
+
   assert ( flipImage ( "input_00.img", "output_00.img", true, false )
            && identicalFiles ( "output_00.img", "ref_00.img" ) );
   
@@ -324,7 +425,7 @@ int main ( void )
   
   assert ( !flipImage ( "hodn.img", "output_hodn.img", false, true ));
 
-  assert( flipImage("tst", "out", true, true));
+  assert( ! flipImage("tst", "out", true, true));
 
   assert ( ! flipImage ( "input_09.img", "output_09.img", true, false ) );
 
@@ -345,6 +446,7 @@ int main ( void )
            && identicalFiles ( "extra_out_06.img", "extra_ref_06.img" ) );
   assert ( flipImage ( "extra_input_07.img", "extra_out_07.img", false, true )
            && identicalFiles ( "extra_out_07.img", "extra_ref_07.img" ) );
+
   /*
   assert ( flipImage ( "extra_input_08.img", "extra_out_08.img", true, false )
            && identicalFiles ( "extra_out_08.img", "extra_ref_08.img" ) );

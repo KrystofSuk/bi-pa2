@@ -1,0 +1,50 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "command": "C:\\Windows\\System32\\bash.exe",
+    "isShellCommand": true,
+    "tasks": [
+        {
+            "label": "Build/Progtest/U1",
+            "type": "shell",
+            "command": "g++ ./Progtest/1/test.cpp -Wall -pedantic -o ./Progtest/1/a.out",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Test/Progtest/U1",
+            "type": "shell",
+            "command": "cd Progtest/1/; ./a.out",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Check",
+            "type": "shell",
+            "command": "echo",
+            "args": [
+                "Tasks ok"
+            ],
+            "group": {
+                "kind": "none"
+            },
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
