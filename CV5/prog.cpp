@@ -13,8 +13,12 @@ class Block{
             _t = 0;
             _x = 0;
             _y = 0;
+            _w = 0;
+            _h = 0;
         };
 
+        int _h = 0;
+        int _w = 0;
         /**
          * @brief Construct a new Block object
          * 
@@ -22,10 +26,12 @@ class Block{
          * @param y 
          * @param v value
          */
-        Block(int x, int y, int v){
+        Block(int x, int y, int h, int w){
             _x = x;
             _y = y;
-            _t = v;
+            _h = h;
+            _w = w;
+            _t = 1;
         };
 
         /**
@@ -104,7 +110,10 @@ class World{
         World & operator+=(const Block & b){
             if(_cnt >= _n)
                 return *this;
-            this->_arr[b.GetY()][b.GetX()].Set(b.GetVal());
+            
+            for(int i = 0; i < b._h; i++)
+                for(int t = 0; t < b._w; t++)
+                    this->_arr[b.GetY()+i][b.GetX()+t].Set(b.GetVal());
             _cnt ++;
             return *this;
         };
@@ -118,11 +127,18 @@ class World{
         World & operator-=(const Block & b){
             if(_cnt <= 0)
                 return *this;
-            if(this->_arr[b.GetY()][b.GetX()].GetVal() == b.GetVal()){
-                this->_arr[b.GetY()][b.GetX()].Set(0);
-                _cnt --;
-            }
                 
+            bool d = false;
+            for(int i = 0; i < b._h; i++){
+                for(int t = 0; t < b._w; t++){
+                    if(this->_arr[b.GetY() + i][b.GetX() + t].GetVal() == b.GetVal()){
+                        this->_arr[b.GetY() + i][b.GetX() + t].Set(0);
+                        d = true;
+                    }
+                }
+            }
+            if(d)
+                _cnt --;
             return *this;
         };
 
@@ -146,7 +162,9 @@ class World{
         };
 
         World & operator=(const World &p2){
-            
+            if(this == &p2)
+                return *this;
+
             _n = p2.GetN();
             _cnt = p2._cnt;
             _arr = new Block*[_y];
@@ -178,10 +196,10 @@ class World{
 
 int main ( int argc, char* argv[] ) {
     World drk(3);
-    Block b(2, 3, 3);
-    Block c(5, 3, 1);
-    Block d(7, 1, 9);
-    Block e(1, 1, 5);
+    Block b(1, 1, 2 ,2);
+    Block c(5, 3, 1,1);
+    Block d(7, 1, 9,3);
+    Block e(1, 1, 5,1);
     drk += b;
     drk += c;
     drk += d;

@@ -32,6 +32,7 @@ using namespace std;
 
 #endif /* __PROGTEST__ */
 
+
 class CLand {
   public:
     CLand() {
@@ -60,6 +61,9 @@ class CLand {
     string Owner() const{
       return _owner;
     }; 
+    void Set(string n){
+      _owner = n;
+    };
   private:
     string _region;
     unsigned _id;
@@ -74,7 +78,7 @@ class CIterator {
 
     };
 
-    CIterator(const vector<CLand> & vec){
+    CIterator(const vector<CLand * > & vec){
       _land = vec;
     };
 
@@ -87,80 +91,128 @@ class CIterator {
       return;
     };
 
+
     string City(void) const {
-      return _land.at(i).City();
+      return _land.at(i) -> City();
     };
 
     string Addr(void) const {
-      return _land.at(i).Address();
+      return _land.at(i) -> Address();
     };
 
     string Region(void) const {
-      return _land.at(i).Region();
+      return _land.at(i) -> Region();
     };
 
     unsigned ID(void) const {
-      return _land.at(i).ID();
+      return _land.at(i) -> ID();
     };
 
     string Owner(void) const {
-      return _land.at(i).Owner();
+      return _land.at(i)  -> Owner();
     };
 
   private:
     unsigned i = 0;
-    vector<CLand> _land;
+    vector<CLand *> _land;
 };
 
-bool compareCLand(CLand i1, CLand i2) 
+bool compareCLandAddress( const CLand * i1, const CLand * i2) 
 { 
-  if(i1.City() == i2.City()){
-    return (i1.Address() < i2.Address());
+  if(i1 -> City() == i2 -> City()){
+    return (i1 -> Address() < i2 -> Address());
   }
-  return (i1.City() < i2.City()); 
+  return (i1 -> City() < i2 -> City()); 
+}
+
+bool compareCLandRegion(const CLand * i1, const CLand * i2) 
+{ 
+  if(i1 -> Region() == i2 -> Region()){
+    return (i1 -> ID() < i2 -> ID());
+  }
+  return (i1 -> Region() < i2 -> Region()); 
+}
+
+bool compareCLandOwner(const CLand * i1, const CLand * i2) 
+{ 
+  return (i1 -> Owner() < i2 -> Owner()); 
 }
 
 class COwner {
   private:
-    vector<CLand> _owned;
     string _name;
     int _count;
+    int _start;
   public:
     COwner(string n){
       _name = n;
       _count = 0;
+      _start = 0;
     };
-    void SetOwnership(const CLand & land){
-      _owned.push_back(land);
+    void SetOwnership(CLand * land){
       _count ++;
     };
     int GetCount() const{
       cout << _count << endl;
       return _count;
     };
-    string GetNames() const{
+    void SetStart(int s){
+      _start = s; 
+    } 
+    void Left(){
+      _start --;
+    }
+    void Right(){
+      _start --;
+    }
+    int GetStart() const{
+      return _start;
+    };
+    string GetName() const{
       return _name;
+    };
+    void RemoveOwnership(){
+      _count--;
     }
 };
 
+
+bool compareCOwner(const COwner & i1, const COwner & i2) 
+{   
+  return (i1.GetName() != i2.GetName()); 
+}
+bool compareCOwner2(const COwner & i1, const COwner & i2) 
+{ 
+  return (i1.GetName() < i2.GetName()); 
+}
+
 class CLandRegister {
   private:
-    vector<CLand> _landVector;
-    vector<CLand> _sortingVectorAlphabet;
-    vector<CLand> _landVectorOwner;
+    vector<CLand *> _landVector;
+    vector<CLand *> _cityVector;
+    vector<CLand *> _regionVector;
+    vector<CLand *> _ownersVector;
     vector<COwner> _owners;
+
   public:
     bool Add(const string & city, const string & addr, const string & region, unsigned int id) {
-      CLand cl = CLand(region, id, city, addr);
+
+      //check duplicity
+
       if(_owners.capacity() == 0){
         COwner co = COwner("");
         _owners.push_back(co);
       }
-      _landVector.insert(_landVector.end() + 0, cl);      
+
+      CLand * cl = new CLand(region, id, city, addr);
+      _landVector.insert(_landVector.end() + 0, cl); 
+      _cityVector.insert(_cityVector.end() + 0, cl); 
+      _regionVector.insert(_regionVector.end() + 0, cl); 
+      _ownersVector .insert(_ownersVector.end() + 0, cl);
+      sort(_cityVector.begin(), _cityVector.end(), compareCLandAddress);
+      sort(_regionVector.begin(), _regionVector.end(), compareCLandRegion); 
+      sort(_ownersVector.begin(), _ownersVector.end(), compareCLandOwner); 
       _owners.at(0).SetOwnership(_landVector.back());
-      _landVectorOwner.insert(_landVectorOwner.end() + 0, cl);
-      _sortingVectorAlphabet.insert(_sortingVectorAlphabet.end() + 0, cl);
-      sort(_sortingVectorAlphabet.begin(), _sortingVectorAlphabet.end(), compareCLand);
       return true;
     };
 
@@ -173,44 +225,241 @@ class CLandRegister {
     };
 
     bool GetOwner(const string & city, const string & addr, string & owner) const {
+      
+      string temp = owner;
+      transform(temp.begin(), temp.end(), temp.begin(), ::tolower); 
+      cout << "Searching for " << temp << endl;
+      if (std::binary_search(_owners.begin(), _owners.end(), temp, compareCOwner)) {
+      } else {
+        return false;
+      }
+      
+      int min = 0;
+      int max = 0; 
+      int guess = 0;
+      max = _cityVector.capacity();
+
+      while (min <= max) 
+      {
+        guess = (int)(((max + min) / 2) + 0.5);
+        if (city == _cityVector.at(guess) -> City() && addr == _cityVector.at(guess) -> Address()) 
+          {
+            if(_cityVector.at(guess) -> Owner() != temp){              
+              return false;
+            }
+            else{
+              return true;
+            }
+            break;
+          } else if (_cityVector.at(guess) -> City() < city) {
+            min = guess + 1;
+          } else if(_cityVector.at(guess) -> City() > city){
+            max = guess - 1;
+          }else if (_cityVector.at(guess) -> Address() < addr) {
+            min = guess + 1;
+          } else if(_cityVector.at(guess) -> Address() > addr){
+            max = guess - 1;
+          }
+      }
+
+
+
       return false;
     };
 
     bool GetOwner(const string & region, unsigned int id, string & owner) const {
+      string temp = owner;
+      transform(temp.begin(), temp.end(), temp.begin(), ::tolower); 
+      cout << "Searching for " << temp << endl;
+      if (std::binary_search(_owners.begin(), _owners.end(), temp, compareCOwner)) {
+      } else {
+        return false;
+      }
+      
+      int min = 0;
+      int max = 0; 
+      int guess = 0;
+      max = _cityVector.capacity();
+
+      while (min <= max) 
+      {
+        guess = (int)(((max + min) / 2) + 0.5);
+        if (region == _regionVector.at(guess) -> Region() && id == _regionVector.at(guess) -> ID()) 
+          {
+            if(_regionVector.at(guess) -> Owner() != temp){              
+              return false;
+            }
+            else{
+              return true;
+            }
+            break;
+          } else if (_regionVector.at(guess) -> Region() < region) {
+            min = guess + 1;
+          } else if(_regionVector.at(guess) -> Region() > region){
+            max = guess - 1;
+          }else if (_regionVector.at(guess) -> ID() < id) {
+            min = guess + 1;
+          } else if(_regionVector.at(guess) -> ID() > id){
+            max = guess - 1;
+          }
+      }
       return false;
     };
 
-    bool NewOwner(const string & city, const string & addr, const string & owner) {
+    bool NewOwner(const string & city, const string & addr, const string & owner) {      
+      string temp = owner;
+      transform(temp.begin(), temp.end(), temp.begin(), ::tolower); 
+      if (std::binary_search(_owners.begin(), _owners.end(), temp, compareCOwner)) {
+      } else {
+        COwner co = COwner(owner);
+        _owners.push_back(co);
+        sort(_owners.begin(), _owners.end(), compareCOwner2);
+      }
+      
+      int min = 0;
+      int max = 0; 
+      int guess = 0;
+      max = _cityVector.capacity();
+
+      while (min <= max) 
+      {
+        guess = (int)(((max + min) / 2) + 0.5);
+        if (city == _cityVector.at(guess) -> City() && addr == _cityVector.at(guess) -> Address()) 
+          {
+            if(_cityVector.at(guess) -> Owner() != temp){
+              
+              return true;
+            }
+            else{
+              return false;
+            }
+            break;
+          } else if (_cityVector.at(guess) -> City() < city) {
+            min = guess + 1;
+          } else if(_cityVector.at(guess) -> City() > city){
+            max = guess - 1;
+          }else if (_cityVector.at(guess) -> Address() < addr) {
+            min = guess + 1;
+          } else if(_cityVector.at(guess) -> Address() > addr){
+            max = guess - 1;
+          }
+      }
       return false;
     };
 
-    bool NewOwner(const string & region, unsigned int id, const string & owner) {
+    bool NewOwner(const string & region, unsigned int id, const string & owner) {    
+      string temp = owner;
+      transform(temp.begin(), temp.end(), temp.begin(), ::tolower); 
+      if (std::binary_search(_owners.begin(), _owners.end(), temp, compareCOwner)) {
+      } else {
+        COwner co = COwner(owner);
+        _owners.push_back(co);
+        sort(_owners.begin(), _owners.end(), compareCOwner2);
+      }
+      
+      int min = 0;
+      int max = 0; 
+      int guess = 0;
+      max = _regionVector.capacity();
+
+      while (min <= max) 
+      {
+        guess = (int)(((max + min) / 2) + 0.5);
+        if (region == _regionVector.at(guess) -> Region() && id == _regionVector.at(guess) -> ID()) 
+          {
+            if(_regionVector.at(guess) -> Owner() != temp){
+              return true;
+            }
+            else{
+              return false;
+            }
+            break;
+          } else if (_regionVector.at(guess) -> Region() < region) {
+            min = guess + 1;
+          } else if(_regionVector.at(guess) -> Region() > region){
+            max = guess - 1;
+          }else if (_regionVector.at(guess) -> ID() < id) {
+            min = guess + 1;
+          } else if(_regionVector.at(guess) -> ID() > id){
+            max = guess - 1;
+          }
+      }
+      cout << "End" << endl;
       return false;
     };
 
     unsigned Count(const string & owner) const {
-      for(int i = 0; i < _owners.capacity(); i++)
-        if(_owners.at(i).GetNames() == owner)
+      string temp = owner;
+      transform(temp.begin(), temp.end(), temp.begin(), ::tolower); 
+      for(unsigned i = 0; i < _owners.capacity(); i++)
+        if(_owners.at(i).GetName() == temp)
           return _owners.at(i).GetCount();
       return 0;
     };
 
-    void Print(){
-      cout << "--------" << endl;
-      for(int i = 0; i < 5; i++){
-        cout << setw(10) << _landVector.at(i).City() << setw(10) << _landVector.at(i).Address() <<setw(10) << _landVector.at(i).Region() <<setw(10) << _landVector.at(i).ID()  << endl;
-      }
-      
-    };
-
-    CIterator ListByAddr(void) const {      
-      CIterator cit = CIterator(_sortingVectorAlphabet);
+    CIterator ListByAddr(void) const {   
+      CIterator cit = CIterator(_cityVector);
       return cit;
     };
 
     CIterator ListByOwner(const string & owner) const {
-      CIterator cit = CIterator(_landVector);
-      return cit;
+      
+      string temp = owner;
+      transform(temp.begin(), temp.end(), temp.begin(), ::tolower); 
+
+      
+
+      int min = 0;
+      int max = 0; 
+      int guess = 0;
+      max = _owners.capacity();
+      bool found = false;
+      if(_owners.capacity() > 1 ){
+        while (min <= max) 
+        {
+          guess = (int)(((max + min) / 2) + 0.5);
+          if (temp == _owners.at(guess).GetName()) 
+            {
+              found = true;
+              break;
+            } else if (_owners.at(guess).GetName() < temp) {
+              min = guess + 1;
+            } else {
+              max = guess - 1;
+            }
+        }
+      }
+      if(owner == "")
+        {
+          found = true;
+          guess = 0;
+        }
+      if(found){
+        cout << owner << endl;
+        vector<CLand *> newVec(_ownersVector.begin() + _owners.at(guess).GetStart(), _ownersVector.begin() + _owners.at(guess).GetStart() + _owners.at(guess).GetCount());
+        return  CIterator(newVec);
+      }
+      return CIterator();
+    };
+    
+    void Print(){
+      cout << "--------" << endl;
+      for(int i = 0; i < 5; i++){
+        cout << setw(10) << _landVector.at(i) -> City() << setw(10) << _landVector.at(i) -> Address() <<setw(10) << _landVector.at(i) -> Region() <<setw(10) << _landVector.at(i) -> ID()  << endl;
+      }
+      cout << "--------" << endl;
+      for(int i = 0; i < 5; i++){
+        cout << setw(10) << _cityVector.at(i) -> City() << setw(10) << _cityVector.at(i) -> Address() <<setw(10) << _cityVector.at(i) -> Region() <<setw(10) << _cityVector.at(i) -> ID()  << endl;
+      }
+      cout << "--------" << endl;
+      for(int i = 0; i < 5; i++){
+        cout << setw(10) << _ownersVector.at(i) -> City() << setw(10) << _ownersVector.at(i) -> Address() <<setw(10) << _ownersVector.at(i) -> Region() <<setw(10) << _ownersVector.at(i) -> ID()<<setw(10) << _ownersVector.at(i) -> Owner() << endl;
+      }
+      cout << "--------" << endl;
+      for(int i = 0; i < 5; i++){
+        cout << setw(10) << _regionVector.at(i) -> City() << setw(10) << _regionVector.at(i) -> Address() <<setw(10) << _regionVector.at(i) -> Region() <<setw(10) << _regionVector.at(i) -> ID()<<setw(10) << _regionVector.at(i) -> Owner() << endl;
+      }
+      
     };
 };
 
@@ -306,15 +555,15 @@ static void test0(void) {
   assert(i1.AtEnd());
 
   assert(x.Count("CVUT") == 0);
-  CIterator i2 = x.ListByOwner("CVUT");
+  CIterator i2 = x.ListByOwner("cvut");
   assert(i2.AtEnd());
 
-/*
 
   assert(x.NewOwner("Prague", "Thakurova", "CVUT"));
   assert(x.NewOwner("Dejvice", 9873, "CVUT"));
   assert(x.NewOwner("Plzen", "Evropska", "Anton Hrabis"));
   assert(x.NewOwner("Librec", 4552, "Cvut"));
+  
   assert(x.GetOwner("Prague", "Thakurova", owner) && owner == "CVUT");
   assert(x.GetOwner("Dejvice", 12345, owner) && owner == "CVUT");
   assert(x.GetOwner("Prague", "Evropska", owner) && owner == "");
@@ -325,6 +574,8 @@ static void test0(void) {
   assert(x.GetOwner("Plzen mesto", 78901, owner) && owner == "Anton Hrabis");
   assert(x.GetOwner("Liberec", "Evropska", owner) && owner == "Cvut");
   assert(x.GetOwner("Librec", 4552, owner) && owner == "Cvut");
+
+/*
   CIterator i3 = x.ListByAddr();
   assert(!i3.AtEnd() &&
     i3.City() == "Liberec" &&
