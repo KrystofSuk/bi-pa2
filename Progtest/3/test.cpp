@@ -183,14 +183,17 @@ class CNode{
       return _interval;
     };
     CNode * GetOverRight(long long r){
-      if(_r == NULL)
-        return this;
-      if(_interval -> GetHI() <= r){
-        if(_r -> GetOverRight(r))
-          return _r -> GetOverRight(r);
-        else
-          return _r -> GetOverLeft(r);
+      if(r > _min && r < _interval -> GetLO()){
+        if(_l == NULL)
+          return this;
+        return _l -> GetOverRight(r);
       }
+      if(r < _max && r > _interval -> GetHI()){
+        if(_r == NULL)
+          return this;
+        return _r -> GetOverRight(r);
+      }
+      return this;
     };
     CNode * GetOverLeft(long long r){
       if(_r == NULL)
@@ -212,7 +215,7 @@ class CNode{
         _min = interval.GetLO();
         return;
       }
-      if(interval.GetHI() < _interval -> GetLO()){
+      if(interval.GetLO() < _interval -> GetLO()){
         if(_l == NULL){
           _l = new CNode();
         }
@@ -221,7 +224,7 @@ class CNode{
         _min = _l -> GetInterval() -> GetHI();
         cout << "L" << endl;
       }
-      else if(interval.GetLO() > _interval -> GetHI()){
+      else if(interval.GetLO() > _interval -> GetLO()){
         if(_r == NULL){
           _r = new CNode();
         }
@@ -232,27 +235,6 @@ class CNode{
       }
       else if(interval.GetLO() >= _interval -> GetLO() && interval.GetHI() <= _interval -> GetHI()){
         cout << "S" << endl;
-      }else {
-        if(_l == NULL && _interval -> GetLO() > interval.GetLO()){
-          _interval -> Set(interval.GetLO(), _interval -> GetHI());
-          _min = interval.GetLO();
-        }
-        if(_r == NULL && _interval -> GetHI() < interval.GetHI()){
-          _interval -> Set(_interval -> GetLO(), interval.GetHI());
-          _max = interval.GetHI();
-        }
-        if(interval.GetLO() < _interval -> GetLO() && interval.GetLO() > _min + 1){
-          cout << "EX_L" << endl;
-          _interval -> Set(interval.GetLO(), _interval -> GetHI());
-        }
-        if(interval.GetHI() > _interval -> GetHI() && interval.GetHI() < _max - 1){
-          cout << "EX_R" << endl;
-          _interval -> Set(_interval -> GetLO(), interval.GetHI());
-        }else if(_r != NULL && _r -> _interval -> GetLO() < interval.GetHI() ){
-          cout << "Over R" <<  endl;
-          _interval -> Set(_interval -> GetLO(), interval.GetHI());
-          _r = _r -> GetOverRight(interval.GetHI());
-        }
       }
     };
 
@@ -268,6 +250,7 @@ class CNode{
         _r -> Print();
         cout << endl;
       }
+      
     };
     
     int GetMax() const {
@@ -681,10 +664,10 @@ int                main                                    ( void )
   n.AddInterval(CRange(90, 600));
   n.AddInterval(CRange(50, 60));
   n.AddInterval(CRange(16, 30));
+  n.AddInterval(CRange(35, 42));
   n.AddInterval(CRange(70, 80));
   n.AddInterval(CRange(85, 87));
   n.AddInterval(CRange(90, 900));
-  n.Print();
   n.AddInterval(CRange(0, 40));
   n.Print();
   /*
