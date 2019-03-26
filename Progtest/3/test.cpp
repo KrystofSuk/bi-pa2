@@ -26,19 +26,12 @@ class InvalidRangeException
 // uncomment if your code implements initializer lists
 // #define EXTENDED_SYNTAX
 
-
-
-
-
-
-
-
-
 /**
  * @brief Range Class for holding specific interval with its lower and higher bound
  * 
  */
-class CRange{
+class CRange
+{
   public:
     /**
      * @brief Construct a new CRange object
@@ -144,125 +137,10 @@ class CRange{
     long long int _hi;
 };
 
-
-class CNode{
-  private:
-    CNode * _l;
-    CNode * _r;
-    int _max;
-    int _min;
-    CRange * _interval;
-  public:
-    CNode (){
-      _l = NULL;
-      _r = NULL;
-      _interval = NULL;
-      _max  = 0;
-      _min  = 0;
-    };
-    /*
-    ~CNode(){
-      if(_l != NULL)
-        delete[] _l;
-      if(_r != NULL)
-        delete[] _r;
-      delete[] _interval;
-    };*/
-    void SetInterval(const CRange & interval){
-      CRange * newRange = new CRange();
-      newRange -> Set(interval.GetLO(), interval.GetHI());
-      _interval = newRange;
-    };   
-    CNode * GetLeft() const{
-      return _l;
-    };
-    CNode * GetRight() const{
-      return _r;
-    };
-    CRange * GetInterval() const{
-      return _interval;
-    };
-    CNode * GetOverRight(long long r){
-      if(r > _min && r < _interval -> GetLO()){
-        if(_l == NULL)
-          return this;
-        return _l -> GetOverRight(r);
-      }
-      if(r < _max && r > _interval -> GetHI()){
-        if(_r == NULL)
-          return this;
-        return _r -> GetOverRight(r);
-      }
-      return this;
-    };
-    CNode * GetOverLeft(long long r){
-      if(_r == NULL)
-        return this;
-      if(_interval -> GetLO() > r){
-        if(_r -> GetOverLeft(r))
-          return _r -> GetOverLeft(r);
-        else
-          return _r -> GetOverRight(r);
-      }
-    };
-    void AddInterval(const CRange & interval){
-      if(_interval == NULL){
-        cout << "C" << endl;
-        CRange * newRange = new CRange();
-        newRange -> Set(interval.GetLO(), interval.GetHI());
-        _interval = newRange;
-        _max = interval.GetHI();
-        _min = interval.GetLO();
-        return;
-      }
-      if(interval.GetLO() < _interval -> GetLO()){
-        if(_l == NULL){
-          _l = new CNode();
-        }
-        _l -> AddInterval(interval);
-        _l -> _max = _interval -> GetLO ();
-        _min = _l -> GetInterval() -> GetHI();
-        cout << "L" << endl;
-      }
-      else if(interval.GetLO() > _interval -> GetLO()){
-        if(_r == NULL){
-          _r = new CNode();
-        }
-        _r -> AddInterval(interval);
-        _r -> _min = _interval -> GetHI ();
-        _max = _r -> GetInterval() -> GetLO();
-        cout << "R: " << _r -> _min << endl;
-      }
-      else if(interval.GetLO() >= _interval -> GetLO() && interval.GetHI() <= _interval -> GetHI()){
-        cout << "S" << endl;
-      }
-    };
-
-    void Print() const{
-      cout << (*_interval) << _max << "/" << _min;
-      if(_l != NULL){
-        cout << endl << "/ " << endl;
-        _l -> Print();
-        cout << endl;
-      }
-      if(_r != NULL){
-        cout << endl << "\\ " << endl;
-        _r -> Print();
-        cout << endl;
-      }
-      
-    };
-    
-    int GetMax() const {
-      return _max;
-    };
-    int GetMin() const {
-      return _min;
-    };
-};
-
-
-
+bool less_A_pointer (CRange lhs, CRange rhs)
+{
+    return (lhs.GetLO() < rhs.GetLO());
+}
 
 /**
  * @brief List of intervals and performer of basic operations with them
@@ -358,14 +236,10 @@ class CRangeList
      * @return CRangeList& Modified CRangeList with added CRange
      */
     CRangeList & operator+=(const CRange & range){
-      //_root = CNode::Insert(_root, range);
-      if(!Includes(range)){
-        _ranges.push_back(range);
-        sort( _ranges.begin(), _ranges.end(), CRange::Compare);
-      }else{
-        _ranges.push_back(range);
-        Normalize();
-      }
+      bool t = false;
+      auto it = lower_bound( _ranges.begin(), _ranges.end(), range, less_A_pointer);
+      _ranges.insert( it, range );
+      Normalize(range);
       return *this;
     };
 
@@ -377,16 +251,10 @@ class CRangeList
      */
     CRangeList & operator+=(const CRangeList & list){
       for(int i = 0; i < list.GetRangesCapacity(); i++){
-        
-        if(!Includes(list._ranges.at(i))){
-          _ranges.push_back(list._ranges.at(i));
-          sort( _ranges.begin(), _ranges.end(), CRange::Compare);
-        }else{
-          _ranges.push_back(list._ranges.at(i));
-          Normalize();
-        }
+        auto it = lower_bound( _ranges.begin(), _ranges.end(), list._ranges.at(i), less_A_pointer);
+        _ranges.insert( it, list._ranges.at(i) );
+        Normalize(list._ranges.at(i));
       }
-      Normalize();
       return *this;
     };
     
@@ -410,10 +278,7 @@ class CRangeList
      * @return CRangeList& CRangeList with removed interval
      */
     CRangeList & operator-=(const CRange & range){
-      if(Includes(range)){
-        Shrink(range);
-        Normalize();
-      }
+      Shrink(range);
       return *this;
     };
 
@@ -424,15 +289,9 @@ class CRangeList
      * @return CRangeList& CRangeList with removed intervals
      */
     CRangeList & operator-=(const CRangeList & list){
-      bool t = false;
       for(int i = 0; i < list.GetRangesCapacity(); i++){
-        if(Includes(list._ranges.at(i))){
-          Shrink(list._ranges.at(i));
-           t = true;
-        }
+        Shrink(list._ranges.at(i));
       }
-      if(t)
-      Normalize();
       return *this;
     };
     
@@ -457,8 +316,9 @@ class CRangeList
      */
     CRangeList & operator=(const CRange & range){
       _ranges.clear();
-      _ranges.push_back(range);
-      Normalize();
+      auto it = lower_bound( _ranges.begin(), _ranges.end(), range, less_A_pointer);
+      _ranges.insert( it, range );
+      Normalize(range);
       return *this;
     }
     
@@ -471,9 +331,10 @@ class CRangeList
     CRangeList & operator=(const CRangeList & list){
       _ranges.clear();
       for(int i = 0; i < list.GetRangesCapacity(); i++){
-        _ranges.push_back(list._ranges.at(i));
+        auto it = lower_bound( _ranges.begin(), _ranges.end(), list._ranges.at(i), less_A_pointer);
+        _ranges.insert( it, list._ranges.at(i) );
+        Normalize(list._ranges.at(i));
       }
-      Normalize();
       return *this;
     };
 
@@ -536,32 +397,72 @@ class CRangeList
     int GetRangesCapacity() const {
       return _ranges.size();
     };
-
     
   private:
     vector<CRange> _ranges;
     
+
     /**
      * @brief Normalization method for simplifiing intervals
      * 
      */
-    void Normalize(){
-      sort( _ranges.begin(), _ranges.end(), CRange::Compare);
-      for(int c = 0; c < GetRangesCapacity(); c++){
-        int max = -1;
-        for(int i = c + 1; i < GetRangesCapacity(); i++)
-        {
-          if(_ranges.at(c).GetHI() >= _ranges.at(i).GetLO()-1){
-            max = i;
+    void Normalize(const CRange & range){
+      //sort( _ranges.begin(), _ranges.end(), CRange::Compare);
+      int min = 0;
+      int max = GetRangesCapacity()-1; 
+      int guess = 0;
+      int i = 0;
+      while (min <= max) 
+      {
+        guess = (int)(((max + min) / 2) + 0.5);
+        if (range == _ranges.at(guess)) {
+          i = guess;
+          int t = i;
+          if(t >= 1)
+          {
+            while(t >= 1){
+              t--;
+              cout << _ranges.at(t) << "/" << range << endl;
+              if(_ranges.at(t).GetHI() + 1 >= range.GetLO()){
+                if(_ranges.at(t).GetHI() >= range.GetHI())
+                  _ranges.at(i).Set(_ranges.at(t).GetLO(), _ranges.at(t).GetHI());
+                else
+                  _ranges.at(i).Set(_ranges.at(t).GetLO(), _ranges.at(i).GetHI());
+                _ranges.erase(_ranges.begin() + t);
+                i--;
+              }
+              else
+                break;
+            }
           }
+          t = i;
+          //cout << t << endl;
+          if(t < GetRangesCapacity() - 1)
+          {
+
+            while(t < GetRangesCapacity() - 1){
+              t++;
+              cout << _ranges.at(t) <<  "\\" << range << endl;
+              if(_ranges.at(t).GetLO() - 1 <= range.GetHI()){
+                if(_ranges.at(t).GetHI() >= range.GetHI())
+                  _ranges.at(i).Set(_ranges.at(i).GetLO(), _ranges.at(t).GetHI());
+                else
+                  _ranges.at(i).Set(_ranges.at(i).GetLO(), _ranges.at(i).GetHI());
+
+                _ranges.erase(_ranges.begin() + t);
+                t--;
+              }
+              else
+                break;
+            }
+          }
+
+          break;
+        } else if (_ranges.at(guess).GetLO() < range.GetLO()) {
+          min = guess + 1;
+        } else if(_ranges.at(guess).GetLO() > range.GetLO()){
+          max = guess - 1;
         }
-        
-        if(max != -1){
-          if(_ranges.at(c).GetHI() <= _ranges.at(max).GetHI())
-          _ranges.at(c).Set(_ranges.at(c).GetLO(), _ranges.at(max).GetHI());
-          _ranges.erase(_ranges.begin() + max);
-          c--;
-        }     
       }
     };
 
@@ -571,11 +472,61 @@ class CRangeList
      * @param range Interval to shrink
      */
     void Shrink(const CRange & range){
-      sort( _ranges.begin(), _ranges.end(), CRange::Compare);
+      //sort( _ranges.begin(), _ranges.end(), CRange::Compare);
+      auto it = lower_bound( _ranges.begin(), _ranges.end(), range, less_A_pointer);
+      _ranges.insert( it, range );
+      cout << "Rem:" << (*this) << endl;
       int l = -1;
       int r = _ranges.size();
       int bR = r;
       vector<int> overlaping;
+      
+      int min = 0;
+      int max = GetRangesCapacity()-1; 
+      int guess = 0;
+      int i = 0;
+      while (min <= max) 
+      {
+        guess = (int)(((max + min) / 2) + 0.5);
+        if (range == _ranges.at(guess)) {
+          i = guess;
+          int t = i;
+          if(t >= 1)
+          {
+            while(t >= 1){
+              t--;
+              if(_ranges.at(t).GetHI() + 1 >= range.GetLO()){                
+                cout << _ranges.at(t) << "/" << range << endl;
+                i--;
+              }
+              else
+                break;
+            }
+          }
+          t = i+1;
+          //cout << t << endl;
+          if(t < GetRangesCapacity()-1)
+          {
+
+            while(t < GetRangesCapacity() - 1){
+              t++;
+              if(_ranges.at(t).GetLO() - 1 <= range.GetHI()){
+                cout << _ranges.at(t) <<  "\\" << range << endl;
+                //t--;
+              }
+              else
+                break;
+            }
+          }
+
+          break;
+        } else if (_ranges.at(guess).GetLO() < range.GetLO()) {
+          min = guess + 1;
+        } else if(_ranges.at(guess).GetLO() > range.GetLO()){
+          max = guess - 1;
+        }
+      }
+      /*
       for(int c = 0; c < GetRangesCapacity(); c++){
         if(_ranges.at(c).GetLO() <= range.GetLO() && _ranges.at(c).GetHI() >= range.GetLO())
           l = c;
@@ -609,6 +560,7 @@ class CRangeList
       for(size_t c = 0; c < overlaping.size(); c++){
         _ranges.erase(_ranges.begin()+overlaping.at(c));
       }
+      */
     };
 };
 
@@ -648,59 +600,41 @@ string             toString                                ( const CRangeList& x
 {
   ostringstream oss;
   oss << x;
-  return oss.str();
+  return oss . str ();
 }
 
 int                main                                    ( void )
 {
-  CNode n;
-  n.AddInterval(CRange(0,6));
-  n.AddInterval(CRange(0,3));
-  n.AddInterval(CRange(10,15));
-  n.AddInterval(CRange(-5,-3));
-  n.AddInterval(CRange(-1,5));
-  n.AddInterval(CRange(3,7));
-  n.AddInterval(CRange(-90, -6));
-  n.AddInterval(CRange(90, 600));
-  n.AddInterval(CRange(50, 60));
-  n.AddInterval(CRange(16, 30));
-  n.AddInterval(CRange(35, 42));
-  n.AddInterval(CRange(70, 80));
-  n.AddInterval(CRange(85, 87));
-  n.AddInterval(CRange(90, 900));
-  n.AddInterval(CRange(0, 40));
-  n.Print();
-  /*
   CRangeList a, b, c;
   assert ( sizeof ( CRange ) <= 2 * sizeof ( long long ) );
-  c = CRange(0, 1);
-  for(int i = 100; i < 10000; i++)
-    c += CRange(i*3,i*3+1);
-  cout << toString(c) << endl;
-  for(int i = 0; i < 10000; i++)
-    c.Includes(CRange(2*i,i*3));
-  for(int i = 0; i < 10000; i++)
-    c -= CRange(2*i,i*3);
+  c -= CRange(-9223372036854775808, 9223372036854775808);
+  for(int i = 0; i < 10000; i ++)
+    c+= CRange(3*i, 3*i+1);
   cout << toString(c) << endl;
   a = CRange ( 5, 10 );
   a += CRange ( 25, 100 );
   assert ( toString ( a ) == "{<5..10>,<25..100>}" );
   a += CRange ( -5, 0 );
   a += CRange ( 8, 30 );
-  cout << toString(a) << endl;
   assert ( toString ( a ) == "{<-5..0>,<5..100>}" );
   a += CRange ( 101, 105 ) + CRange ( 120, 150 ) + CRange ( 160, 180 ) + CRange ( 190, 210 );
 
+  cout << toString(a) << endl;
   assert ( toString ( a ) == "{<-5..0>,<5..105>,<120..150>,<160..180>,<190..210>}" );
   a += CRange ( 106, 119 ) + CRange ( 152, 158 );
+  cout << "---------" << endl;
   assert ( toString ( a ) == "{<-5..0>,<5..150>,<152..158>,<160..180>,<190..210>}" );
+  cout << "---------" << endl;
+  cout << toString(a) << endl;
   a += CRange ( -3, 170 );
+  cout << "---------" << endl;
   a += CRange ( -30, 1000 );
   assert ( toString ( a ) == "{<-30..1000>}" );
   b = CRange ( -500, -300 ) + CRange ( 2000, 3000 ) + CRange ( 700, 1001 );
   a += b;
   assert ( toString ( a ) == "{<-500..-300>,<-30..1001>,<2000..3000>}" );
   a -= CRange ( -400, -400 );
+  cout << toString(a) << endl;
   assert ( toString ( a ) == "{<-500..-401>,<-399..-300>,<-30..1001>,<2000..3000>}" );
   
   a -= CRange ( 10, 20 ) + CRange ( 900, 2500 ) + CRange ( 30, 40 ) + CRange ( 10000, 20000 );
@@ -731,7 +665,6 @@ int                main                                    ( void )
   assert ( !( a == b ) );
   assert ( a != b );
 
-  
   assert ( b . Includes ( 15 ) );
   assert ( b . Includes ( 2900 ) );
   assert ( b . Includes ( CRange ( 15, 15 ) ) );
