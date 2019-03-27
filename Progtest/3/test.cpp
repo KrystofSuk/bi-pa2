@@ -139,7 +139,13 @@ class CRange
 
 bool less_A_pointer (CRange lhs, CRange rhs)
 {
+  //cout << lhs << "as" << rhs << endl;
     return (lhs.GetLO() < rhs.GetLO());
+}
+bool less_B_pointer (CRange lhs, CRange rhs)
+{
+  cout << lhs << "vs" << rhs << endl;
+    return (lhs.GetHI() > rhs.GetHI());
 }
 
 /**
@@ -236,10 +242,16 @@ class CRangeList
      * @return CRangeList& Modified CRangeList with added CRange
      */
     CRangeList & operator+=(const CRange & range){
-      bool t = false;
+      cout << (*this) << endl;
       auto it = lower_bound( _ranges.begin(), _ranges.end(), range, less_A_pointer);
+      auto it2 = lower_bound( _rev.begin(), _rev.end(), range, less_B_pointer);
+      int t = (it -_ranges.begin());
+      int t2 = (it2-_rev.begin());
+      cout << range <<  t << endl;
+      cout << range <<  t2 << endl;
       _ranges.insert( it, range );
-      Normalize(range);
+      _rev.insert( it2, range );
+      Normalize(range, t, t2);
       return *this;
     };
 
@@ -253,7 +265,7 @@ class CRangeList
       for(int i = 0; i < list.GetRangesCapacity(); i++){
         auto it = lower_bound( _ranges.begin(), _ranges.end(), list._ranges.at(i), less_A_pointer);
         _ranges.insert( it, list._ranges.at(i) );
-        Normalize(list._ranges.at(i));
+        //Normalize(list._ranges.at(i));
       }
       return *this;
     };
@@ -317,8 +329,12 @@ class CRangeList
     CRangeList & operator=(const CRange & range){
       _ranges.clear();
       auto it = lower_bound( _ranges.begin(), _ranges.end(), range, less_A_pointer);
+      auto it2 = lower_bound( _rev.begin(), _rev.end(), range, less_B_pointer);
+      cout << range <<  (it -_ranges.begin()) << endl;
+      cout << range <<  (it2-_rev.begin()) << endl;
       _ranges.insert( it, range );
-      Normalize(range);
+      _rev.insert( it2, range );
+      //Normalize(range);
       return *this;
     }
     
@@ -333,7 +349,7 @@ class CRangeList
       for(int i = 0; i < list.GetRangesCapacity(); i++){
         auto it = lower_bound( _ranges.begin(), _ranges.end(), list._ranges.at(i), less_A_pointer);
         _ranges.insert( it, list._ranges.at(i) );
-        Normalize(list._ranges.at(i));
+       // Normalize(list._ranges.at(i));
       }
       return *this;
     };
@@ -400,13 +416,22 @@ class CRangeList
     
   private:
     vector<CRange> _ranges;
+    vector<CRange> _rev;
     
 
     /**
      * @brief Normalization method for simplifiing intervals
      * 
      */
-    void Normalize(const CRange & range){
+    void Normalize(const CRange & range, int i1, int i2){
+      cout << i1 << i2 << endl;
+      if(i1 > i2){
+        CRange c(_ranges.at(i2).GetLO(), _ranges.at(i1).GetHI());
+        cout << "Merged " << range << c << endl;
+      }
+      if(i1 < i2)
+        cout << "Merge L" << endl;
+      /*
       //sort( _ranges.begin(), _ranges.end(), CRange::Compare);
       int min = 0;
       int max = GetRangesCapacity()-1; 
@@ -416,47 +441,8 @@ class CRangeList
       {
         guess = (int)(((max + min) / 2) + 0.5);
         if (range == _ranges.at(guess)) {
+          //cout << "I:" << guess << endl;
           i = guess;
-          int t = i;
-          if(t >= 1)
-          {
-            while(t >= 1){
-              t--;
-              cout << _ranges.at(t) << "/" << range << endl;
-              if(_ranges.at(t).GetHI() + 1 >= range.GetLO()){
-                if(_ranges.at(t).GetHI() >= range.GetHI())
-                  _ranges.at(i).Set(_ranges.at(t).GetLO(), _ranges.at(t).GetHI());
-                else
-                  _ranges.at(i).Set(_ranges.at(t).GetLO(), _ranges.at(i).GetHI());
-                _ranges.erase(_ranges.begin() + t);
-                i--;
-              }
-              else
-                break;
-            }
-          }
-          t = i;
-          //cout << t << endl;
-          if(t < GetRangesCapacity() - 1)
-          {
-
-            while(t < GetRangesCapacity() - 1){
-              t++;
-              cout << _ranges.at(t) <<  "\\" << range << endl;
-              if(_ranges.at(t).GetLO() - 1 <= range.GetHI()){
-                if(_ranges.at(t).GetHI() >= range.GetHI())
-                  _ranges.at(i).Set(_ranges.at(i).GetLO(), _ranges.at(t).GetHI());
-                else
-                  _ranges.at(i).Set(_ranges.at(i).GetLO(), _ranges.at(i).GetHI());
-
-                _ranges.erase(_ranges.begin() + t);
-                t--;
-              }
-              else
-                break;
-            }
-          }
-
           break;
         } else if (_ranges.at(guess).GetLO() < range.GetLO()) {
           min = guess + 1;
@@ -464,6 +450,59 @@ class CRangeList
           max = guess - 1;
         }
       }
+
+      min = 0;
+      max = i-1; 
+      int l = GetRangesCapacity();
+      while (min <= max) 
+      {
+        guess = (int)(((max + min) / 2) + 0.5);
+        //cout << min <<"/" << _ranges.at(guess)<< max << endl;
+        if (_ranges.at(guess).GetHI() >= range.GetLO()-1 && l > guess){
+          //cout << "L:" << _ranges.at(guess) << range << endl;
+          l = guess;
+        } else if (_ranges.at(guess).GetLO() < range.GetLO()) {
+          min = guess + 1;
+        } else if(_ranges.at(guess).GetLO() > range.GetLO()){
+          max = guess - 1;
+        }
+      }
+
+      
+      min = i+1;
+      max = GetRangesCapacity()-1; 
+      int r = -1;
+      while (min <= max) 
+      {
+        guess = (int)(((max + min) / 2) + 0.5);
+        //cout << min <<"/" << _ranges.at(guess)<< max << endl;
+        if (_ranges.at(guess).GetLO() <= range.GetHI()+1 && r < guess){
+          //cout << "R:" << _ranges.at(guess) << range << endl;
+          r = guess;
+        } else if (_ranges.at(guess).GetLO() < range.GetLO()) {
+          min = guess + 1;
+        } else if(_ranges.at(guess).GetLO() > range.GetLO()){
+          max = guess - 1;
+        }
+      }
+      //cout << (*this) << endl;
+      if(r >= 0){
+        if(_ranges.at(r).GetLO() < _ranges.at(i).GetLO())
+          _ranges.at(i).Set(_ranges.at(r).GetLO(), _ranges.at(r).GetHI());
+        else
+          _ranges.at(i).Set(_ranges.at(i).GetLO(), _ranges.at(r).GetHI());
+        _ranges.erase(_ranges.begin()+i+1, _ranges.begin()+r+1);
+      }
+      if(l < GetRangesCapacity()){
+        if(_ranges.at(l).GetHI() > _ranges.at(i).GetHI())
+          _ranges.at(i).Set(_ranges.at(l).GetLO(), _ranges.at(l).GetHI());
+        else
+          _ranges.at(i).Set(_ranges.at(l).GetLO(), _ranges.at(i).GetHI());
+        _ranges.erase(_ranges.begin()+l, _ranges.begin()+i);
+      }
+      //cout << (*this) << endl;
+      //cout << "[" << l << range << r << "]" << endl;
+      */
     };
 
     /**
@@ -608,19 +647,21 @@ int                main                                    ( void )
   CRangeList a, b, c;
   assert ( sizeof ( CRange ) <= 2 * sizeof ( long long ) );
   c -= CRange(-9223372036854775808, 9223372036854775808);
-  for(int i = 0; i < 10000; i ++)
-    c+= CRange(3*i, 3*i+1);
+  //for(int i = 0; i < 10000; i ++)
+    //c+= CRange(3*i, 3*i+1);
   cout << toString(c) << endl;
   a = CRange ( 5, 10 );
   a += CRange ( 25, 100 );
   assert ( toString ( a ) == "{<5..10>,<25..100>}" );
-  a += CRange ( -5, 0 );
+  a += CRange ( -5, 50 );
   a += CRange ( 8, 30 );
+  cout << toString(a) << endl;
   assert ( toString ( a ) == "{<-5..0>,<5..100>}" );
   a += CRange ( 101, 105 ) + CRange ( 120, 150 ) + CRange ( 160, 180 ) + CRange ( 190, 210 );
 
   cout << toString(a) << endl;
   assert ( toString ( a ) == "{<-5..0>,<5..105>,<120..150>,<160..180>,<190..210>}" );
+  /*
   a += CRange ( 106, 119 ) + CRange ( 152, 158 );
   cout << "---------" << endl;
   assert ( toString ( a ) == "{<-5..0>,<5..150>,<152..158>,<160..180>,<190..210>}" );
