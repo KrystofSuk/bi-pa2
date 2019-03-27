@@ -88,7 +88,6 @@ class COwner {
       _lands.insert(_lands.end(),land);
     };
     int GetCount() const{
-      cout << _count << endl;
       return _count;
     };
     void RemoveOwnership(CLand * land){
@@ -109,10 +108,6 @@ class COwner {
 
 class CIterator {
   public:
-    CIterator(){
-
-    };
-
     CIterator(const vector<CLand * > & vec){
       _land = vec;
     };
@@ -190,7 +185,6 @@ class CLandRegister {
     };
     bool Add(const string & city, const string & addr, const string & region, unsigned int id) {
 
-      //cout << "A" << endl;
       COwner * co;
       if(_owners.size() == 0){
         co = new COwner("");
@@ -215,18 +209,42 @@ class CLandRegister {
     };
 
     bool Del(const string & city, const string & addr) {
-      return false;
+      int i = BinarySearchAddress(_cityVector, addr, city);
+      if( i == -1)
+        return false;
+      int old = GetOwnerIndex(_cityVector.at(i) -> Owner());
+      _owners.at(old) -> RemoveOwnership( _cityVector.at(i));
+      auto it = find (_regionVector.begin(), _regionVector.end(), _cityVector.at(i));
+      auto i2 = find (_landVector.begin(), _landVector.end(), _cityVector.at(i));
+      _regionVector.erase(it);
+      _landVector.erase(i2);
+      CLand * rem = _cityVector.at(i);
+      _cityVector.erase(_cityVector.begin() + i);
+      delete rem;
+      return true;
     };
 
     bool Del(const string & region, unsigned int id) {
-      return false;
+      
+      int i = BinarySearchAddress(_regionVector, region, id);
+      if( i == -1)
+        return false;
+      int old = GetOwnerIndex(_regionVector.at(i) -> Owner());
+      _owners.at(old) -> RemoveOwnership( _regionVector.at(i));
+      auto it = find (_cityVector.begin(), _cityVector.end(), _regionVector.at(i));
+      auto i2 = find (_landVector.begin(), _landVector.end(), _regionVector.at(i));
+      _cityVector.erase(it);
+      _landVector.erase(i2);
+      CLand * rem = _regionVector.at(i);
+      _regionVector.erase(_regionVector.begin() + i);
+      delete rem;
+      return true;
     };
 
     bool GetOwner(const string & city, const string & addr, string & owner) const {
       int i = BinarySearchAddress(_cityVector, addr, city);
       if( i == -1)
         return false;
-      cout << "On " << i << endl;   
       owner = _cityVector.at(i) -> Owner();   
       return true;
     };
@@ -235,7 +253,6 @@ class CLandRegister {
       int i = BinarySearchAddress(_regionVector, region, id);
       if( i == -1)
         return false;
-      cout << "On " << i << endl;   
       owner = _regionVector.at(i) -> Owner();   
       return true;
     };
@@ -244,10 +261,8 @@ class CLandRegister {
       int i = BinarySearchAddress(_cityVector, addr, city);
       string nam = owner;
       transform(nam.begin(), nam.end(), nam.begin(), ::tolower); 
-      cout << "F" << i << endl;
       if(i != -1){
         int own = GetOwnerIndex(nam);
-        cout  << "O" << own << endl;
         COwner * co;
         if(own == -1){
           co = new COwner(nam);
@@ -259,7 +274,6 @@ class CLandRegister {
         
         int old = GetOwnerIndex(_cityVector.at(i) -> Owner());
         _owners.at(old) -> RemoveOwnership( _cityVector.at(i));
-        cout << "OLD" << _owners.at(old) -> GetName() << endl;
         _cityVector.at(i) -> Set(owner);
         co -> SetOwnership(_cityVector.at(i));
         return true;
@@ -269,12 +283,10 @@ class CLandRegister {
 
     bool NewOwner(const string & region, unsigned int id, const string & owner) { 
       int i = BinarySearchAddress(_regionVector, region, id);
-      cout << "D" << i << endl;
       string nam = owner;
       transform(nam.begin(), nam.end(), nam.begin(), ::tolower); 
       if(i != -1){
         int own = GetOwnerIndex(nam);
-        cout  << "O" << own << "/" << i << endl;
         COwner * co;
         if(own == -1){
           co = new COwner(nam);
@@ -285,7 +297,6 @@ class CLandRegister {
           co = _owners.at(own);
         
         int old = GetOwnerIndex(_regionVector.at(i) -> Owner());
-        cout << "OLD" << _owners.at(old) -> GetName() << endl;
         _owners.at(old) -> RemoveOwnership( _regionVector.at(i));
         _regionVector.at(i) -> Set(owner);
         co -> SetOwnership(_regionVector.at(i));
@@ -304,7 +315,6 @@ class CLandRegister {
       {
         guess = (int)(((max + min) / 2) + 0.5);
         if (region -> Address() == l.at(guess) -> Address() && region -> City() == l.at(guess) -> City() && region -> ID() == l.at(guess) -> ID() && region -> Region() == l.at(guess) -> Region()){
-          cout << "Found:" << l.at(guess) -> Address() << endl;
           return guess;
         } else if (l.at(guess) -> Address() < region -> Address()) {
           min = guess + 1;
@@ -353,7 +363,6 @@ class CLandRegister {
       {
         guess = (int)(((max + min) / 2) + 0.5);
         if (id == l.at(guess) -> ID() && region == l.at(guess) -> Region()){
-          cout << "Found:" << l.at(guess) -> Address()<< guess << endl;
           return guess;
         } else if (l.at(guess) -> Region() < region) {
           min = guess + 1;
@@ -375,7 +384,6 @@ class CLandRegister {
       for(unsigned i = 0; i < _owners.size(); i++){
         string name = _owners.at(i) -> GetName();
         transform(name.begin(), name.end(), name.begin(), ::tolower); 
-        cout << name << temp << (name == temp) << _owners.at(i) -> GetCount() << endl;
         if(name == temp)
           cnt += _owners.at(i) -> GetCount();
       }
@@ -398,10 +406,8 @@ class CLandRegister {
       while (min <= max) 
       {
         guess = (int)(((max + min) / 2) + 0.5);
-        //cout << "G" << max << "."<<guess<< "."<< min << endl; 
         string nam =  _owners.at(guess) -> GetName();
         transform(nam.begin(), nam.end(), nam.begin(), ::tolower);
-        //cout << ","<<nam <<"," <<endl;
         if (tmp == nam) 
         {
           return guess;
@@ -415,7 +421,6 @@ class CLandRegister {
     };
 
     CIterator ListByOwner(const string & owner) const {
-      cout << "L: " << owner << GetOwnerIndex(owner) << endl;
       if(GetOwnerIndex(owner) == -1)
         return CIterator();
       return CIterator(_owners.at(GetOwnerIndex(owner)) -> GetLands());
@@ -448,13 +453,19 @@ static void test0(void) {
   assert(x.Add("Prague", "Evropska", "Vokovice", 12345));
   assert(x.Add("Prague", "Technicka", "Dejvice", 9873));
   assert(x.Add("Plzen", "Evropska", "Plzen mesto", 78901));
-  x.Add("Liberec", "Evropska", "Librec", 4552);
-  /*
-  for(int i =5000; i< 10000; i++ )
+  for(int i = 0; i< 10000; i++ )
     x.Add("Liberec", "Evropska", "Librec", i);
-  for(int i =5000; i< 10000; i++ )
-    x.GetOwner("Prague", "Thakurova", owner);
-*/
+  for(int i =00; i< 10000; i++ )
+    x.NewOwner("Liberec", "Evropska", "Cvut");
+  for(int i =00; i< 10000; i++ )
+    x.GetOwner("Liberec", "Evropska", owner);
+  for(int i =00; i< 10000000; i++ )
+    x.Count("Cvut");
+  for(int i =00; i< 10000; i++ )
+    x.Del("Liberec", "Evropska");
+
+  x.Add("Liberec", "Evropska", "Librec", 4552);
+
   x.Print();
   CIterator i0 = x.ListByAddr();
   
