@@ -33,38 +33,114 @@ using namespace std;
 #endif /* __PROGTEST__ */
 
 
-
+/**
+ * @brief Class for holding property information like region, id, city, address and owner
+ * 
+ */
 class CLand {
   public:
-    CLand() {
-    };
-
+    /**
+     * @brief Construct a new CLand object
+     * 
+     * @param r Region
+     * @param i ID
+     * @param c City
+     * @param a Address
+     */
     CLand(string r, unsigned i, string c, string a) {
       _region = r;
       _id = i;
       _city = c;
       _address = a;
       _owner = "";
-    };
+    }
 
+    /**
+     * @brief Gets region name
+     * 
+     * @return string 
+     */
     string Region() const{
       return _region;
-    };
+    }
+    
+    /**
+     * @brief Gets id
+     * 
+     * @return unsigned 
+     */
     unsigned ID() const{
       return _id;
-    };
+    }
+
+    /**
+     * @brief Gets city name
+     * 
+     * @return string 
+     */
     string City() const{
       return _city;
-    };
+    }
+
+    /**
+     * @brief Gets address name
+     * 
+     * @return string 
+     */
     string Address() const{
       return _address;
-    }; 
+    }
+
+    /**
+     * @brief Gets Owner name
+     * 
+     * @return string 
+     */
     string Owner() const{
       return _owner;
-    }; 
+    }
+
+    /**
+     * @brief Sets Owner name
+     * 
+     * @param n New name
+     */
     void Set(string n){
       _owner = n;
-    };
+    }
+
+    /**
+     * @brief Compares two properties by city and address names
+     * 
+     * @param i1 First property
+     * @param i2 Second property
+     * @return true i1 < i2
+     * @return false i2 >= i1
+     */
+    static bool CompareAddress( const CLand * i1, const CLand * i2) 
+    {
+      
+      return i1->City().compare(i2->City()) ? 
+      i1->City().compare(i2->City()) < 0 :
+      i1->Address().compare(i2->Address()) < 0;
+
+    }
+
+    /**
+     * @brief Compares two properties by region and id names
+     * 
+     * @param i1 First property
+     * @param i2 Second property
+     * @return true i1 < i2
+     * @return false i2 >= i1
+     */
+    static bool CompareRegion(const CLand * i1, const CLand * i2)
+    { 
+      return i1->Region().compare(i2->Region()) ? 
+      i1->Region().compare(i2->Region()) < 0 :
+      i1->ID() < i2->ID();
+    }
+
   private:
     string _region;
     unsigned _id;
@@ -73,102 +149,182 @@ class CLand {
     string _owner;
 };
 
+/**
+ * @brief Class for Owner which contains his owned properties and name 
+ * 
+ */
 class COwner {
   private:
     vector<CLand *> _lands;
     string _name;
-    int _count;
   public:
+    /**
+     * @brief Construct a new COwner object
+     * 
+     * @param n Name of owner
+     */
     COwner(string n){
       _name = n;
-      _count = 0;
-    };
+    }
+
+    /**
+     * @brief Set the Ownership of specific property
+     * 
+     * @param land Property to own
+     */
     void SetOwnership(CLand * land){
-      _count ++;
       _lands.insert(_lands.end(),land);
-    };
+    }
+
+    /**
+     * @brief Get the count of his property
+     * 
+     * @return int Properties count
+     */
     int GetCount() const{
-      return _count;
-    };
+      return _lands.size();
+    }
+
+    /**
+     * @brief Removes ownership of specific property
+     * 
+     * @param land Property to remove
+     */
     void RemoveOwnership(CLand * land){
-      _count--;
-      for(int i = 0; i < _lands.size(); i++)
+      for(size_t i = 0; i < _lands.size(); i++)
         if(_lands.at(i) == land){
           _lands.erase(_lands.begin() + i);
           break;
         }
-    };
+    }
+
+    /**
+     * @brief Get the name of owner
+     * 
+     * @return string 
+     */
     string GetName() const{
       return _name;
-    };
+    }
+
+    /**
+     * @brief Get owned properties
+     * 
+     * @return vector< CLand *>  
+     */
     vector< CLand *> GetLands() const{
       return _lands;
-    };
+    }
+
+    /**
+     * @brief Compares two owners by name
+     * 
+     * @param i1 First owner
+     * @param i2 Second owner
+     * @return true i1 < i2
+     * @return false i2 >= i1
+     */
+    static bool Compare(const COwner * i1, const COwner * i2) 
+    { 
+      int t = i1 -> GetName().compare( i2 -> GetName());
+      return (t <= 0); 
+    }
 };
 
+/**
+ * @brief Iterator class for specific properties
+ * 
+ */
 class CIterator {
   public:
+    /**
+     * @brief Construct a new CIterator object
+     * 
+     */
+    CIterator(){}
+
+    /**
+     * @brief Construct a new CIterator object with specific properties
+     * 
+     * @param vec Specific properties
+     */
     CIterator(const vector<CLand * > & vec){
       _land = vec;
-    };
+    }
 
+    /**
+     * @brief Checks if iterator is at end of his properties
+     * 
+     * @return true No properties left 
+     * @return false Some properties left
+     */
     bool AtEnd(void) const {
       return (_land.size() == i);
-    };
+    }
 
+    /**
+     * @brief Changes position to next element
+     * 
+     */
     void Next(void) {
       i++;
       return;
-    };
+    }
 
+    /**
+     * @brief Gets city of current property
+     * 
+     * @return string 
+     */
     string City(void) const {
       return _land.at(i) -> City();
-    };
+    }
 
+    /**
+     * @brief Gets address of current property
+     * 
+     * @return string 
+     */
     string Addr(void) const {
       return _land.at(i) -> Address();
-    };
+    }
 
+    /**
+     * @brief Gets region of current property
+     * 
+     * @return string 
+     */
     string Region(void) const {
       return _land.at(i) -> Region();
-    };
+    }
 
+    /**
+     * @brief Gets id of current property
+     * 
+     * @return unsigned 
+     */
     unsigned ID(void) const {
       return _land.at(i) -> ID();
-    };
+    }
 
+    /**
+     * @brief Gets owner name of current property
+     * 
+     * @return string 
+     */
     string Owner(void) const {
       return _land.at(i)  -> Owner();
-    };
-
-
+    }
+    
   private:
     unsigned i = 0;
     vector<CLand *> _land;
 };
 
-bool compareCLandAddress( const CLand * i1, const CLand * i2) 
-{ 
-  if(i1 -> City() == i2 -> City()){
-    return (i1 -> Address() < i2 -> Address());
-  }
-  return (i1 -> City() < i2 -> City()); 
-}
-
-bool compareCLandRegion(const CLand * i1, const CLand * i2) 
-{ 
-  if(i1 -> Region() == i2 -> Region()){
-    return (i1 -> ID() < i2 -> ID());
-  }
-  return (i1 -> Region() < i2 -> Region()); 
-}
-
-bool compareCOwner(const COwner * i1, const COwner * i2) 
-{ 
-  return (i1 -> GetName() < i2 -> GetName()); 
-}
-
-
+/**
+ * @brief Land register for storing properties and their owners
+ * 
+ */
 class CLandRegister {
   private:
     vector<CLand *> _landVector;
@@ -177,14 +333,17 @@ class CLandRegister {
     vector<COwner *> _owners;
 
   public:
-    ~CLandRegister(){
-      for ( auto p : _landVector )
-        delete p;
-      for ( auto p : _owners )
-        delete p;
-    };
+    /**
+     * @brief Add the new property to list if possible
+     * 
+     * @param city 
+     * @param addr 
+     * @param region 
+     * @param id 
+     * @return true Property was added
+     * @return false Property was inside list already
+     */
     bool Add(const string & city, const string & addr, const string & region, unsigned int id) {
-
       COwner * co;
       if(_owners.size() == 0){
         co = new COwner("");
@@ -194,20 +353,46 @@ class CLandRegister {
       }
       CLand * cl = new CLand(region, id, city, addr);
       
-      if(BinarySearchAddress(_cityVector, cl) != -1){
-        delete cl;
-        return false;
-      }     
-      
-      auto it1 = lower_bound( _cityVector.begin(), _cityVector.end(), cl, compareCLandAddress);
-      auto it2 = lower_bound( _regionVector.begin(), _regionVector.end(), cl, compareCLandRegion);
-      _landVector.insert(_landVector.end() + 0, cl); 
-      _cityVector.insert(it1, cl); 
-      _regionVector.insert(it2, cl); 
-      co -> SetOwnership(cl);
-      return true;
-    };
+      if(_landVector.size() == 0)
+      {
+        _landVector.push_back(cl); 
+        _cityVector.push_back(cl); 
+        _regionVector.push_back(cl); 
+        co -> SetOwnership(cl);
+        return true;
+      }else{
+        auto it = lower_bound(_cityVector.begin(), _cityVector.end(), cl, CLand::CompareAddress);
+        unsigned long int indexCity = it - _cityVector.begin();
+        it = lower_bound(_regionVector.begin(), _regionVector.end(), cl, CLand::CompareRegion);
+        unsigned long int indexRegion = it - _regionVector.begin();
 
+        if(_cityVector.size() == indexCity || _cityVector[indexCity] -> Address().compare(cl -> Address()) != 0 || _cityVector[indexCity] -> City().compare(cl -> City()) != 0){
+            if(_regionVector.size() == indexRegion || _regionVector[indexRegion] -> Region().compare(cl -> Region()) != 0 || _regionVector[indexRegion] -> ID() != cl -> ID()){
+
+              _landVector.push_back(cl); 
+              _cityVector.insert(_cityVector.begin() + indexCity, cl); 
+              _regionVector.insert(_regionVector.begin() + indexRegion, cl); 
+              co -> SetOwnership(cl);
+              return true;
+            }else{
+              delete cl;
+              return false;
+            }
+        }else{
+          delete cl;
+          return false;
+        }
+      }      
+    }
+
+    /**
+     * @brief Deletes property from list identified by city and addr 
+     * 
+     * @param city 
+     * @param addr 
+     * @return true Property was deleted
+     * @return false Property was not present
+     */
     bool Del(const string & city, const string & addr) {
       int i = BinarySearchAddress(_cityVector, addr, city);
       if( i == -1)
@@ -222,8 +407,16 @@ class CLandRegister {
       _cityVector.erase(_cityVector.begin() + i);
       delete rem;
       return true;
-    };
+    }
 
+    /**
+     * @brief Deletes property from list identified by region and id 
+     * 
+     * @param region 
+     * @param id 
+     * @return true Property was deleted
+     * @return false Property was not present
+     */
     bool Del(const string & region, unsigned int id) {
       
       int i = BinarySearchAddress(_regionVector, region, id);
@@ -239,24 +432,51 @@ class CLandRegister {
       _regionVector.erase(_regionVector.begin() + i);
       delete rem;
       return true;
-    };
+    }
 
+    /**
+     * @brief Get the owner of property identified by city and addr
+     * 
+     * @param city 
+     * @param addr 
+     * @param owner Sets owner to found owner
+     * @return true Owner was found
+     * @return false Owner wasn't found
+     */
     bool GetOwner(const string & city, const string & addr, string & owner) const {
       int i = BinarySearchAddress(_cityVector, addr, city);
       if( i == -1)
         return false;
       owner = _cityVector.at(i) -> Owner();   
       return true;
-    };
+    }
 
+    /**
+     * @brief Get the owner of property identified by id and region
+     * 
+     * @param region 
+     * @param id 
+     * @param owner Sets owner to found owner
+     * @return true Owner was found
+     * @return false Owner wasn't found
+     */
     bool GetOwner(const string & region, unsigned int id, string & owner) const {
       int i = BinarySearchAddress(_regionVector, region, id);
       if( i == -1)
         return false;
       owner = _regionVector.at(i) -> Owner();   
       return true;
-    };
+    }
 
+    /**
+     * @brief Sets owner
+     * 
+     * @param city 
+     * @param addr 
+     * @param owner 
+     * @return true 
+     * @return false 
+     */
     bool NewOwner(const string & city, const string & addr, const string & owner) { 
       int i = BinarySearchAddress(_cityVector, addr, city);
       string nam = owner;
@@ -266,23 +486,35 @@ class CLandRegister {
         COwner * co;
         if(own == -1){
           co = new COwner(nam);
-          auto it = lower_bound( _owners.begin(), _owners.end(), co, compareCOwner);
+          auto it = lower_bound( _owners.begin(), _owners.end(), co, COwner::Compare);
           _owners.insert(it, co);
         }
         else
           co = _owners.at(own);
         
         int old = GetOwnerIndex(_cityVector.at(i) -> Owner());
+        if(own == old)
+          return false;
         _owners.at(old) -> RemoveOwnership( _cityVector.at(i));
         _cityVector.at(i) -> Set(owner);
         co -> SetOwnership(_cityVector.at(i));
         return true;
       }
       return false;
-    };
+    }
 
+    /**
+     * @brief Sets owner
+     * 
+     * @param region 
+     * @param id 
+     * @param owner 
+     * @return true 
+     * @return false 
+     */
     bool NewOwner(const string & region, unsigned int id, const string & owner) { 
       int i = BinarySearchAddress(_regionVector, region, id);
+      cout << i<< endl;
       string nam = owner;
       transform(nam.begin(), nam.end(), nam.begin(), ::tolower); 
       if(i != -1){
@@ -290,21 +522,30 @@ class CLandRegister {
         COwner * co;
         if(own == -1){
           co = new COwner(nam);
-          auto it = lower_bound( _owners.begin(), _owners.end(), co, compareCOwner);
+          auto it = lower_bound( _owners.begin(), _owners.end(), co, COwner::Compare);
           _owners.insert(it, co);
         }
         else
           co = _owners.at(own);
         
         int old = GetOwnerIndex(_regionVector.at(i) -> Owner());
+        if(own == old)
+          return false;
         _owners.at(old) -> RemoveOwnership( _regionVector.at(i));
         _regionVector.at(i) -> Set(owner);
         co -> SetOwnership(_regionVector.at(i));
         return true;
       }
       return false;
-    };
+    }
 
+    /**
+     * @brief Binary search for specific property
+     * 
+     * @param l 
+     * @param region 
+     * @return int 
+     */
     int BinarySearchAddress(const vector<CLand *> & l, const CLand * region)const{
       int min = 0;
       int max = 0; 
@@ -314,13 +555,16 @@ class CLandRegister {
       while (min <= max) 
       {
         guess = (int)(((max + min) / 2) + 0.5);
-        if (region -> Address() == l.at(guess) -> Address() && region -> City() == l.at(guess) -> City() && region -> ID() == l.at(guess) -> ID() && region -> Region() == l.at(guess) -> Region()){
+        int a = region -> Address().compare(l.at(guess) -> Address());
+        int c = region -> City().compare(l.at(guess) -> City());
+        int r =  region -> Region().compare(l.at(guess) -> Region());
+        if ((a==0 &&  c == 0)|| (region -> ID() == l.at(guess) -> ID() && r == 0)){
           return guess;
-        } else if (l.at(guess) -> Address() < region -> Address()) {
+        } else if (a > 0) {
           min = guess + 1;
-        } else if(l.at(guess) -> Address() > region -> Address()){
+        } else if(a < 0){
           max = guess - 1;
-        }else if (l.at(guess) -> City() < region -> City()) {
+        }else if (c > 0) {
           min = guess + 1;
         } else{
           max = guess - 1;
@@ -329,6 +573,14 @@ class CLandRegister {
       return -1;
     }
     
+    /**
+     * @brief Binary search for land identified by addr and city
+     * 
+     * @param l 
+     * @param addr 
+     * @param city 
+     * @return int 
+     */
     int BinarySearchAddress(const vector<CLand *> & l, const string & addr, const string & city)const{
       int min = 0;
       int max = 0; 
@@ -338,13 +590,15 @@ class CLandRegister {
       while (min <= max) 
       {
         guess = (int)(((max + min) / 2) + 0.5);
-        if (addr == l.at(guess) -> Address() && city == l.at(guess) -> City()){
+        int a = addr.compare(l.at(guess) -> Address()); 
+        int c = city.compare(l.at(guess) -> City());
+        if (a == 0 && c == 0){
           return guess;
-        }else if (l.at(guess) -> City() < city) {
+        }else if (c > 0) {
           min = guess + 1;
-        } else if(l.at(guess) -> City() > city){
+        } else if(c < 0){
           max = guess - 1;
-        } else if (l.at(guess) -> Address() < addr) {
+        } else if (a > 0) {
           min = guess + 1;
         } else {
           max = guess - 1;
@@ -353,6 +607,14 @@ class CLandRegister {
       return -1;
     }
     
+    /**
+     * @brief Binary search for land identified by region and id
+     * 
+     * @param l 
+     * @param region 
+     * @param id 
+     * @return int 
+     */
     int BinarySearchAddress(const vector<CLand *> & l, const string & region, const unsigned int & id)const{
       int min = 0;
       int max = 0; 
@@ -362,11 +624,12 @@ class CLandRegister {
       while (min <= max) 
       {
         guess = (int)(((max + min) / 2) + 0.5);
-        if (id == l.at(guess) -> ID() && region == l.at(guess) -> Region()){
+        int r = region.compare(l.at(guess) -> Region());
+        if (id == l.at(guess) -> ID() && r == 0){
           return guess;
-        } else if (l.at(guess) -> Region() < region) {
+        } else if (r > 0) {
           min = guess + 1;
-        } else if(l.at(guess) -> Region() > region){
+        } else if(r < 0){
           max = guess - 1;
         }else if (l.at(guess) -> ID() < id) {
           min = guess + 1;
@@ -377,25 +640,38 @@ class CLandRegister {
       return -1;
     }
 
+    /**
+     * @brief Gets cound of properties from specific owner
+     * 
+     * @param owner 
+     * @return unsigned 
+     */
     unsigned Count(const string & owner) const {
       string temp = owner;
-      int cnt = 0;
       transform(temp.begin(), temp.end(), temp.begin(), ::tolower); 
-      for(unsigned i = 0; i < _owners.size(); i++){
-        string name = _owners.at(i) -> GetName();
-        transform(name.begin(), name.end(), name.begin(), ::tolower); 
-        if(name == temp)
-          cnt += _owners.at(i) -> GetCount();
-      }
-      return cnt;
-    };
+      int own = GetOwnerIndex(temp);
+      if(own == -1)
+        return 0;
+      
+      return _owners.at(own) -> GetCount();;
+    }
 
+    /**
+     * @brief Creates iterator from address
+     * 
+     * @return CIterator 
+     */
     CIterator ListByAddr(void) const {   
       CIterator cit = CIterator(_cityVector);
       return cit;
-    };
+    }
 
-
+    /**
+     * @brief Get the Owner Index object
+     * 
+     * @param owner 
+     * @return int 
+     */
     int GetOwnerIndex(string const & owner)const{
       string tmp = owner;
       transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
@@ -408,39 +684,59 @@ class CLandRegister {
         guess = (int)(((max + min) / 2) + 0.5);
         string nam =  _owners.at(guess) -> GetName();
         transform(nam.begin(), nam.end(), nam.begin(), ::tolower);
-        if (tmp == nam) 
+        if (tmp.compare(nam) == 0) 
         {
           return guess;
-        } else if (nam < tmp) {
+        } else if (tmp.compare(nam) > 0) {
           min = guess + 1;
         } else {
           max = guess - 1;
         }
       }
       return -1;
-    };
+    }
 
+    /**
+     * @brief Creates iterator for specific owner
+     * 
+     * @param owner 
+     * @return CIterator 
+     */
     CIterator ListByOwner(const string & owner) const {
       if(GetOwnerIndex(owner) == -1)
         return CIterator();
       return CIterator(_owners.at(GetOwnerIndex(owner)) -> GetLands());
-    };
+    }
     
+    /**
+     * @brief Print method for testing
+     * 
+     */
     void Print(){
       cout << "--------" << endl;
-      for(int i = 0; i < _landVector.size(); i++){
+      for(size_t i = 0; i < _landVector.size(); i++){
         cout << setw(10) << _landVector.at(i) -> City() << setw(10) << _landVector.at(i) -> Address() <<setw(10) << _landVector.at(i) -> Region() <<setw(10) << _landVector.at(i) -> ID() <<setw(5) << _landVector.at(i) -> Owner()<< endl;
       }
       cout << "--------" << endl;
-      for(int i = 0; i < 5; i++){
+      for(size_t i = 0; i < _cityVector.size(); i++){
         cout << setw(10) << _cityVector.at(i) -> City() << setw(10) << _cityVector.at(i) -> Address() <<setw(10) << _cityVector.at(i) -> Region() <<setw(10) << _cityVector.at(i) -> ID() <<setw(5) << _cityVector.at(i) ->Owner()<< endl;
       }
       cout << "--------" << endl;
-      for(int i = 0; i < 5; i++){
+      for(size_t i = 0; i < _regionVector.size(); i++){
         cout << setw(10) << _regionVector.at(i) -> City() << setw(10) << _regionVector.at(i) -> Address() <<setw(10) << _regionVector.at(i) -> Region() <<setw(10) << _regionVector.at(i) -> ID()<<setw(5) << _regionVector.at(i) ->Owner()<< endl;
-      }
-      
-    };
+      }      
+    }
+
+    /**
+     * @brief Destroy the CLandRegister object
+     * 
+     */
+    ~CLandRegister(){
+      for ( auto p : _landVector )
+        delete p;
+      for ( auto p : _owners )
+        delete p;
+    }
 };
 
 #ifndef __PROGTEST__
@@ -449,10 +745,7 @@ static void test0(void) {
   CLandRegister x;
   string owner;
 
-  assert(x.Add("Prague", "Thakurova", "Dejvice", 12345));
-  assert(x.Add("Prague", "Evropska", "Vokovice", 12345));
-  assert(x.Add("Prague", "Technicka", "Dejvice", 9873));
-  assert(x.Add("Plzen", "Evropska", "Plzen mesto", 78901));
+  //assert(x.Add("prague", "Thakurova", "Dejvice", 12346));
   for(int i = 0; i< 10000; i++ )
     x.Add("Liberec", "Evropska", "Librec", i);
   for(int i =00; i< 10000; i++ )
@@ -464,11 +757,15 @@ static void test0(void) {
   for(int i =00; i< 10000; i++ )
     x.Del("Liberec", "Evropska");
 
-  x.Add("Liberec", "Evropska", "Librec", 4552);
+  assert ( x . Add ( "Prague", "Thakurova", "Dejvice", 12345 ) );
+  assert ( x . Add ( "Prague", "Evropska", "Vokovice", 12345 ) );
+  assert ( x . Add ( "Prague", "Technicka", "Dejvice", 9873 ) );
+  assert ( x . Add ( "Plzen", "Evropska", "Plzen mesto", 78901 ) );
+  assert ( x . Add ( "Liberec", "Evropska", "Librec", 4552 ) );
 
   x.Print();
   CIterator i0 = x.ListByAddr();
-  
+  cout << i0.Addr() << endl;
   assert(!i0.AtEnd() &&
     i0.City() == "Liberec" &&
     i0.Addr() == "Evropska" &&
@@ -507,6 +804,7 @@ static void test0(void) {
   assert(i0.AtEnd());
 
   x.Print();
+  cout << x.Count("") << endl;
   assert(x.Count("") == 5);
   CIterator i1 = x.ListByOwner("");
   assert(!i1.AtEnd() &&
@@ -701,6 +999,9 @@ static void test1(void) {
   assert(x.Add("Prague", "Thakurova", "Dejvice", 12345));
   assert(x.Add("Prague", "Evropska", "Vokovice", 12345));
   assert(x.Add("Prague", "Technicka", "Dejvice", 9873));
+
+  x.Print();
+
   assert(!x.Add("Prague", "Technicka", "Hradcany", 7344));
   assert(!x.Add("Brno", "Bozetechova", "Dejvice", 9873));
   assert(!x.GetOwner("Prague", "THAKUROVA", owner));
@@ -734,7 +1035,7 @@ static void test1(void) {
   assert(!x.NewOwner("prague", "Technicka", "CVUT"));
   assert(!x.NewOwner("dejvice", 9873, "CVUT"));
   assert(!x.NewOwner("Dejvice", 9973, "CVUT"));
-  assert(!x.NewOwner("Dejvice", 12345, "CVUT"));
+  assert(!x.NewOwner("Dejvice", 12345, "CVuT"));
   assert(x.Count("CVUT") == 1);
   CIterator i1 = x.ListByOwner("CVUT");
   assert(!i1.AtEnd() &&
@@ -751,13 +1052,14 @@ static void test1(void) {
   assert(x.Del("Prague", "Technicka"));
   assert(!x.Del("Prague", "Technicka"));
   assert(!x.Del("Dejvice", 9873));
-  /*
-  */
+  
+  assert(x.NewOwner ("Dejvice", 12345, "Mazbunjiqbba" ));
+  assert(!x.NewOwner ("Dejvice", 12345, "Mazbunjiqbba" ));
 }
 
 int main(void) {
   test0();
-  //test1();
+  test1();
   return 0;
 }
 #endif /* __PROGTEST__ */

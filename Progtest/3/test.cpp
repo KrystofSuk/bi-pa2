@@ -140,7 +140,7 @@ class CRange
 bool less_A_pointer (CRange lhs, CRange rhs)
 {
   //cout << lhs << "as" << rhs << endl;
-    return (lhs.GetLO() < rhs.GetLO());
+    return (lhs.GetLO() <= rhs.GetLO());
 }
 bool less_B_pointer (CRange lhs, CRange rhs)
 {
@@ -167,9 +167,9 @@ class CRangeList
       int min = 0;
       int max = 0; 
       int guess = 0;
-      max = GetRangesCapacity();
+      max = GetRangesCapacity()-1;
 
-      while (min < max) 
+      while (min <= max) 
       {
         guess = (int)(((max + min) / 2) + 0.5);
         if (x >= _ranges.at(guess).GetLO() && x <= _ranges.at(guess).GetHI()) 
@@ -182,6 +182,37 @@ class CRangeList
           }
       }
       return false;
+    }
+
+    
+    double Include(long long int x) const{
+      
+      int min = 0;
+      int max = GetRangesCapacity()-1; 
+      if(x < _ranges.at(min).GetLO()){
+        cout << "L" << endl;
+        return -1;
+      }
+      if(x > _ranges.at(max).GetHI()){
+        cout << "R" << endl;
+        return max+1;
+      }
+      
+      int guess = -1;
+
+      while (min <= max) 
+      {
+        guess = (int)(((max + min) / 2) + 0.5);
+        if(_ranges.at(guess).GetLO() > x){
+          max = guess - 1;
+        }else if(_ranges.at(guess).GetHI() < x){
+          min = guess + 1;
+        }else{
+          return guess + 1;
+        }
+      }
+      cout << "O" << guess + 0.5f << endl;
+      return guess + 0.5f ;
     }
 
     /**
@@ -197,28 +228,27 @@ class CRangeList
       int max = GetRangesCapacity(); 
       int guess = 0;
       int l = -1;
-      int r = GetRangesCapacity();
+      int r = GetRangesCapacity()-1;
 
-      while (min < max) 
+      while (min <= max) 
       {
         guess = (int)(((max + min) / 2) + 0.5);
         if (x >= _ranges.at(guess).GetLO() && x <= _ranges.at(guess).GetHI()) 
-          {
-            l = guess;
-            break;
-          } else if (_ranges.at(guess).GetHI() < x) {
-            min = guess + 1;
-          } else if(_ranges.at(guess).GetLO() > x){
-            max = guess - 1;
-          }
+        {
+          l = guess;
+          break;
+        } else if (_ranges.at(guess).GetHI() < x) {
+          min = guess + 1;
+        } else if(_ranges.at(guess).GetLO() > x){
+          max = guess - 1;
+        }
       }
       
       x = range.GetHI();
       min = 0;
       guess = 0;
-      max = GetRangesCapacity();
-
-      while (min < max) 
+      max = GetRangesCapacity()-1;
+      while (min <= max) 
       {
         guess = (int)(((max + min) / 2) + 0.5);
         if (x >= _ranges.at(guess).GetLO() && x <= _ranges.at(guess).GetHI()) 
@@ -244,14 +274,13 @@ class CRangeList
     CRangeList & operator+=(const CRange & range){
       cout << (*this) << endl;
       auto it = lower_bound( _ranges.begin(), _ranges.end(), range, less_A_pointer);
-      auto it2 = lower_bound( _rev.begin(), _rev.end(), range, less_B_pointer);
       int t = (it -_ranges.begin());
-      int t2 = (it2-_rev.begin());
-      cout << range <<  t << endl;
-      cout << range <<  t2 << endl;
+      bool temp;
+      double t2 = Include(range.GetLO());
+      double t3 = Include(range.GetHI());
+      cout << range << "I: " << t2  <<"." << t3 << endl;
       _ranges.insert( it, range );
-      _rev.insert( it2, range );
-      Normalize(range, t, t2);
+      Normalize(range,t, t2, t3);
       return *this;
     };
 
@@ -423,14 +452,12 @@ class CRangeList
      * @brief Normalization method for simplifiing intervals
      * 
      */
-    void Normalize(const CRange & range, int i1, int i2){
-      cout << i1 << i2 << endl;
-      if(i1 > i2){
-        CRange c(_ranges.at(i2).GetLO(), _ranges.at(i1).GetHI());
-        cout << "Merged " << range << c << endl;
-      }
-      if(i1 < i2)
-        cout << "Merge L" << endl;
+    void Normalize(const CRange & range, int i1, int min, int max){
+      if(min == -1)
+      for(int i = i1-1; i >= 0; i--)
+        _ranges.erase(_ranges.begin() + i);
+      
+      cout << (*this) << endl;
       /*
       //sort( _ranges.begin(), _ranges.end(), CRange::Compare);
       int min = 0;
@@ -652,9 +679,10 @@ int                main                                    ( void )
   cout << toString(c) << endl;
   a = CRange ( 5, 10 );
   a += CRange ( 25, 100 );
+  cout << toString(a) << endl;
   assert ( toString ( a ) == "{<5..10>,<25..100>}" );
-  a += CRange ( -5, 50 );
-  a += CRange ( 8, 30 );
+  a += CRange ( -5, 0 );
+  a += CRange ( 3, 4 );
   cout << toString(a) << endl;
   assert ( toString ( a ) == "{<-5..0>,<5..100>}" );
   a += CRange ( 101, 105 ) + CRange ( 120, 150 ) + CRange ( 160, 180 ) + CRange ( 190, 210 );
