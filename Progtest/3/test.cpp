@@ -140,12 +140,11 @@ class CRange
 bool less_A_pointer (CRange lhs, CRange rhs)
 {
   //cout << lhs << "as" << rhs << endl;
-    return (lhs.GetLO() <= rhs.GetLO());
+    return (lhs.GetLO() < rhs.GetLO());
 }
 bool less_B_pointer (CRange lhs, CRange rhs)
 {
-  cout << lhs << "vs" << rhs << endl;
-    return (lhs.GetHI() > rhs.GetHI());
+  return (lhs.GetHI() < rhs.GetHI());
 }
 
 /**
@@ -273,14 +272,13 @@ class CRangeList
      */
     CRangeList & operator+=(const CRange & range){
       cout << (*this) << endl;
-      auto it = lower_bound( _ranges.begin(), _ranges.end(), range, less_A_pointer);
-      int t = (it -_ranges.begin());
-      bool temp;
-      double t2 = Include(range.GetLO());
-      double t3 = Include(range.GetHI());
-      cout << range << "I: " << t2  <<"." << t3 << endl;
+      auto it = lower_bound( _ranges.begin(), _ranges.end(), range, less_B_pointer);
+      int mx = (it - _ranges.begin());
+      it = lower_bound( _ranges.begin(), _ranges.end(), range, less_A_pointer);
+      int mn = (it - _ranges.begin());
+      cout << range << "Insert: " << mn  <<"." << mx << endl;
       _ranges.insert( it, range );
-      Normalize(range,t, t2, t3);
+      Normalize(range, mn, mx);
       return *this;
     };
 
@@ -417,6 +415,7 @@ class CRangeList
     /**
      * @brief Operator overload for << which prints intervals in specific format to stream
      * 
+     * 
      * @param os Output stream
      * @param rangeList CRangeList to print 
      * @return ostream& Stream with content
@@ -452,11 +451,24 @@ class CRangeList
      * @brief Normalization method for simplifiing intervals
      * 
      */
-    void Normalize(const CRange & range, int i1, int min, int max){
-      if(min == -1)
-      for(int i = i1-1; i >= 0; i--)
-        _ranges.erase(_ranges.begin() + i);
-      
+    void Normalize(const CRange & range, int min, int max){
+      cout << (*this) << endl;
+      min ++;
+      if(min != GetRangesCapacity()){  
+        cout << min << endl;
+        while(min <= max){
+          _ranges.erase(_ranges.begin() + min);
+          max--;
+        }
+        
+      }
+      min --;
+      if(min != 0){
+
+      }
+      if(max != GetRangesCapacity()){
+        
+      }
       cout << (*this) << endl;
       /*
       //sort( _ranges.begin(), _ranges.end(), CRange::Compare);
@@ -682,7 +694,7 @@ int                main                                    ( void )
   cout << toString(a) << endl;
   assert ( toString ( a ) == "{<5..10>,<25..100>}" );
   a += CRange ( -5, 0 );
-  a += CRange ( 3, 4 );
+  a += CRange ( 10, 50 );
   cout << toString(a) << endl;
   assert ( toString ( a ) == "{<-5..0>,<5..100>}" );
   a += CRange ( 101, 105 ) + CRange ( 120, 150 ) + CRange ( 160, 180 ) + CRange ( 190, 210 );
