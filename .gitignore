@@ -1,5 +1,7 @@
 # Prerequisites
 *.d
+
+*.suo
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
