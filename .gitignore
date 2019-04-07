@@ -1,5 +1,10 @@
 # Prerequisites
 *.d
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
 # Compiled Object files
 *.slo
@@ -30,3 +35,8 @@
 *.exe
 *.out
 *.app
+
+Progtest/3/.vs/3/v15/Browse.VC.opendb
+Progtest/3/.vs/ProjectSettings.json
+Progtest/3/.vs/3/v15/Browse.VC.db
+Progtest/3/.vs/slnx.sqlite
