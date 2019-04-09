@@ -20,574 +20,672 @@ using namespace std;
 class InvalidRangeException
 {
 };
-#endif /* __PROGTEST__ */
+#endif
 
-// uncomment if your code implements initializer lists
-// #define EXTENDED_SYNTAX
 
 /**
- * @brief Range Class for holding specific interval with its lower and higher bound
+ * @brief Crange Class representing interval.
  * 
  */
 class CRange
 {
-public:
-  /**
+  public:
+    /**
      * @brief Construct a new CRange object
      * 
-     * @param lo lower bound
-     * @param hi higher bound
+     * @param lo is lower number of interval.
+     * @param hi is higher number of interval.
      */
-  CRange(long long int lo, long long int hi) : _lo(lo), _hi(hi)
-  {
-    if (_lo > _hi)
-      throw InvalidRangeException();
-  }
-
-  /**
-     * @brief Construct a new CRange object
+    CRange(long long lo, long long hi)
+    {
+        if(lo > hi)
+        {
+            throw InvalidRangeException();
+        }
+        this->lo = lo;
+        this->hi = hi;
+    }
+    /**
+     * @brief return string representation of interval.
+     * 
+     * @return string representation of interval.
+     */
+    string ToString() const
+    {
+        if (lo == hi) {
+            return std::to_string(lo);
+        }
+        else
+        {
+            return "<"+std::to_string(lo)+".."+std::to_string(hi)+">";
+        }   
+    }
+    /**
+     * @brief Set lower number of interval.
+     * 
+     * @param lo 
+     */
+    void SetLo(long long lo)
+    {
+        this->lo = lo;
+    }
+    /**
+     * @brief Set higher number of interval.
+     * 
+     * @param hi 
+     */
+    void SetHi(long long hi)
+    {
+        this->hi = hi;
+    }
+    /**
+     * @brief Get the lower number of interval.
+     * 
+     * @return long long 
+     */
+    long long GetLo() const
+    {
+        return lo;
+    }
+    /**
+     * @brief Get the higher number of interval.
+     * 
+     * @return long long 
+     */
+    long long GetHi() const
+    {
+        return hi;
+    }
+    /**
+     * @brief compare two CRanges.
+     * 
+     * @param range 
+     * @return true when object has same values.
+     * @return false when object douest have same values.
+     */
+    bool operator == (const CRange & range) const
+    {
+        return lo == range.lo && hi == range.hi ? true : false;
+    }
+  private:
+    /**
+     * @brief lower number.
      * 
      */
-  CRange() : _lo(0), _hi(0) {}
-
-  /**
-     * @brief Output stream overload
+    long long lo;
+    /**
+     * @brief higher number.
      * 
-     * @param os output stream
-     * @param range range object
-     * @return ostream& output stream
      */
-  friend ostream &operator<<(ostream &os, const CRange &range)
-  {
-    if (range._lo != range._hi)
-      os << "<" << range._lo << ".." << range._hi << ">";
-    else
-      os << range._lo;
-    return os;
-  }
-
-  /**
-     * @brief Coparation operator between two range objects
-     * 
-     * @param l First range object
-     * @param r Second range object
-     * @return true Objects are identical
-     * @return false Objects are not identical
-     */
-  friend bool operator==(const CRange &l, const CRange &r)
-  {
-    return (l._hi == r._hi && l._lo == r._lo);
-  }
-
-  /**
-     * @brief Coparation operator between two range objects
-     * 
-     * @param l First range object
-     * @param r Second range object
-     * @return true Objects are not identical
-     * @return false Objects are identical
-     */
-  friend bool operator!=(const CRange &l, const CRange &r)
-  {
-    return !(l == r);
-  }
-
-  /**
-     * @brief Getter for lower bound
-     * 
-     * @return long long int Lower bound
-     */
-  long long int GetLO() const { return _lo; }
-
-  /**
-     * @brief Getter for higher bound
-     * 
-     * @return long long int Higher bound
-     */
-  long long int GetHI() const { return _hi; }
-
-  /**
-     * @brief Setter for new bounds
-     * 
-     * @param lo Lower bound
-     * @param hi Higher bound
-     */
-  void Set(long long int lo, long long int hi)
-  {
-    if (_lo > _hi)
-      throw InvalidRangeException();
-    _lo = lo;
-    _hi = hi;
-  }
-
-  /**
-     * @brief Comparation fuction for two range objects by lower range
-     * 
-     * @param i1 first object
-     * @param i2 second object
-     * @return true i1 is smaller than i2
-     * @return false i1 is equal or greater than i2
-     */
-  static bool Compare(const CRange &i1, const CRange &i2)
-  {
-    return (i1.GetLO() < i2.GetLO());
-  }
-
-private:
-  long long int _lo;
-  long long int _hi;
+    long long hi;
 };
 
-bool less_A_pointer(CRange lhs, CRange rhs)
+/**
+ * @brief Function for compare lower values of Crange.
+ * 
+ * @param r1
+ * @param r2 
+ * @return true 
+ * @return false 
+ */
+bool LOCompareFunc(const CRange & r1, const CRange & r2)
 {
-  //cout << lhs << "as" << rhs << endl;
-  return (lhs.GetLO() < rhs.GetLO());
+    if(r1.GetLo()<r2.GetLo())
+    {
+        return true;
+    }
+    return false;
 }
-bool less_B_pointer(CRange lhs, CRange rhs)
+/**
+ * @brief Function for compare higher values of Crange.
+ * 
+ * @param r1 
+ * @param r2 
+ * @return true 
+ * @return false 
+ */
+bool HICompareFunc(const CRange & r1, const CRange & r2)
 {
-  return (lhs.GetHI() <= rhs.GetHI());
+    if(r1.GetHi()<=r2.GetHi())
+    {
+        return true;
+    }
+    return false;
 }
 
 /**
- * @brief List of intervals and performer of basic operations with them
+ * @brief CRangeList is used to store and optimize workflow with many intervals.
  * 
  */
 class CRangeList
 {
-public:
-  /**
-   * @brief Include method for checking if number x is present in intervals
-   * 
-   * @param x Wanted number
-   * @return true Number is present
-   * @return false Number is not present
-   */
-  bool Includes(long long int x) const
-  {
-
-    int min = 0;
-    int max = 0;
-    int guess = 0;
-    max = GetRangesCapacity() - 1;
-
-    while (min <= max)
+  public:
+    /**
+     * @brief Construct a new CRangeList object
+     * 
+     */
+    CRangeList()
     {
-      guess = (int)(((max + min) / 2) + 0.5);
-      if (x >= _ranges.at(guess).GetLO() && x <= _ranges.at(guess).GetHI())
-      {
-        return true;
-      }
-      else if (_ranges.at(guess).GetHI() < x)
-      {
-        min = guess + 1;
-      }
-      else if (_ranges.at(guess).GetLO() > x)
-      {
-        max = guess - 1;
-      }
+        list = vector<CRange>();
     }
-    return false;
-  }
-
-  /**
-     * @brief Include method for checking if interval is present in intervals
+    /**
+     * @brief just for call internal Insert, added just for potencionaly controll of input.
      * 
-     * @param range Wanted interval
-     * @return true Interval is present
-     * @return false Interval is not present
+     * @param range 
      */
-  bool Includes(const CRange &range) const
-  {
-    long long int x = 0;
-    int min = 0;
-    int max = GetRangesCapacity() - 1;
-    int guess;
-    int l = -1;
-    int r = GetRangesCapacity();
-
-    x = range.GetLO();
-    min = 0;
-    guess = 0;
-    max = GetRangesCapacity() - 1;
-    while (min <= max)
+    void AddTest(CRange range)
     {
-      guess = (int)(((max + min) / 2) + 0.5);
-      if (x >= _ranges.at(guess).GetLO() && x <= _ranges.at(guess).GetHI())
-      {
-        l = guess;
-        break;
-      }
-      else if (_ranges.at(guess).GetHI() < x)
-      {
-        min = guess + 1;
-      }
-      else if (_ranges.at(guess).GetLO() > x)
-      {
-        max = guess - 1;
-      }
+        Insert(range);
     }
-
-    x = range.GetHI();
-    min = 0;
-    guess = 0;
-    max = GetRangesCapacity() - 1;
-    while (min <= max)
+    /**
+     * @brief just for call internal Remove, added just for potencionaly controll of input.
+     * 
+     * @param range 
+     */
+    void RemoveTest(CRange range)
     {
-      guess = (int)(((max + min) / 2) + 0.5);
-      if (x >= _ranges.at(guess).GetLO() && x <= _ranges.at(guess).GetHI())
-      {
-        r = guess;
-        break;
-      }
-      else if (_ranges.at(guess).GetHI() < x)
-      {
-        min = guess + 1;
-      }
-      else if (_ranges.at(guess).GetLO() > x)
-      {
-        max = guess - 1;
-      }
+        Remove(range);
     }
-    //cout << *this << endl;
-    //cout << "Found " << range << " : " << l << "/" << r << endl;
-    return (l == r);
-  }
-
-  /**
-     * @brief Operator overload for += of CRange object
+    /**
+     * @brief check if some number is contained in interval.
      * 
-     * @param range CRange object
-     * @return CRangeList& Modified CRangeList with added CRange
+     * @param data number to check.
+     * @return true is in intervals.
+     * @return false not found in intervals.
      */
-  CRangeList &operator+=(const CRange &range)
-  {
-    if (!Includes(range))
+    bool Includes(long long data) const
     {
-      //cout << (*this) << endl;
-      auto it = lower_bound(_ranges.begin(), _ranges.end(), range, less_B_pointer);
-      int mx = (it - _ranges.begin());
-      it = lower_bound(_ranges.begin(), _ranges.end(), range, less_A_pointer);
-      int mn = (it - _ranges.begin());
-      //cout << range << "Insert: " << mn  <<"." << mx << endl;
-      _ranges.insert(it, range);
-      Normalize(range, mn, mx);
-    }
-    return *this;
-  }
-
-  /**
-     * @brief Operator overload for += of CRangeList object
-     * 
-     * @param list CRangeList with vector of intervals
-     * @return CRangeList& Modified CRangeList with added intervals from input list
-     */
-  CRangeList &operator+=(const CRangeList &list)
-  {
-    for (int i = 0; i < list.GetRangesCapacity(); i++)
-    {
-      *this += list._ranges.at(i);
-    }
-    return *this;
-  }
-
-  /**
-     * @brief Operator overload for + of CRangeList and CRange objects
-     * 
-     * @param l CRangeList object
-     * @param r CRange object
-     * @return CRangeList CRangeList with added interval
-     */
-  friend CRangeList operator+(CRangeList l, const CRange &r)
-  {
-    l += r;
-    return l;
-  }
-
-  /**
-     * @brief Operator overload for -= CRange
-     * 
-     * @param range Interval to remove
-     * @return CRangeList& CRangeList with removed interval
-     */
-  CRangeList &operator-=(const CRange &range)
-  {
-    Shrink(range);
-    return *this;
-  }
-
-  /**
-     * @brief Operator overload for -= CRangeList
-     * 
-     * @param list CRangeList with intervals to remove from original
-     * @return CRangeList& CRangeList with removed intervals
-     */
-  CRangeList &operator-=(const CRangeList &list)
-  {
-    for (int i = 0; i < list.GetRangesCapacity(); i++)
-    {
-      Shrink(list._ranges.at(i));
-    }
-    return *this;
-  }
-
-  /**
-     * @brief Operator overload for - CRangeList and CRange
-     * 
-     * @param l CRangeList with intervals
-     * @param r Specific interval which will be removed
-     * @return CRangeList CRangeList with removed interval
-     */
-  friend CRangeList operator-(CRangeList l, const CRange &r)
-  {
-    l -= r;
-    return l;
-  }
-
-  /**
-     * @brief Operator overload for = which resets intervals to specified interval
-     * 
-     * @param range Specific interval
-     * @return CRangeList& Modified CRangeList with only specified interval
-     */
-  CRangeList &operator=(const CRange &range)
-  {
-    _ranges.clear();
-    *this += range;
-    return *this;
-  }
-
-  /**
-     * @brief Operator overload for = which resets intervals to specific list of intervals
-     * 
-     * @param list CRangeList of specific interals
-     * @return CRangeList& Modifiec CRangeList with same intervals as input list
-     */
-  CRangeList &operator=(const CRangeList &list)
-  {
-    _ranges.clear();
-    for (int i = 0; i < list.GetRangesCapacity(); i++)
-    {
-      *this += list._ranges.at(i);
-    }
-    return *this;
-  }
-
-  /**
-     * @brief Operator overload for == which compares two lists
-     * 
-     * @param l First CRangeList
-     * @param r Second CRangeList
-     * @return true Lists are same
-     * @return false Lists are different
-     */
-  friend bool operator==(const CRangeList &l, const CRangeList &r)
-  {
-    if (l.GetRangesCapacity() != r.GetRangesCapacity())
-      return false;
-    for (int i = 0; i < l.GetRangesCapacity(); i++)
-      if (l._ranges.at(i) != r._ranges.at(i))
-        return false;
-    return true;
-  }
-
-  /**
-     * @brief Operator overload for != of two lists
-     * 
-     * @param l First CRangeList
-     * @param r Second CRangeList
-     * @return true Lists are not same
-     * @return false Lists are same
-     */
-  friend bool operator!=(const CRangeList &l, const CRangeList &r)
-  {
-    return !(l == r);
-  }
-
-  /**
-     * @brief Operator overload for << which prints intervals in specific format to stream
-     * 
-     * 
-     * @param os Output stream
-     * @param rangeList CRangeList to print 
-     * @return ostream& Stream with content
-     */
-  friend ostream &operator<<(ostream &os, const CRangeList &rangeList)
-  {
-    size_t max = rangeList.GetRangesCapacity();
-    os << "{";
-    for (size_t c = 0; c < max; c++)
-    {
-      os << rangeList._ranges.at(c);
-      if (c + 1 != max)
-        os << ",";
-    }
-    os << "}";
-    return os;
-  }
-
-  /**
-     * @brief Get the number of intervals
-     * 
-     * @return int Number of intervals
-     */
-  int GetRangesCapacity() const
-  {
-    return _ranges.size();
-  }
-
-private:
-  vector<CRange> _ranges;
-  vector<CRange> _rev;
-
-  /**
-     * @brief Normalization method for simplifiing intervals
-     * 
-     */
-  void Normalize(const CRange &range, int min, int max)
-  {
-    //cout << (*this) << endl;
-    min++;
-    if (min != GetRangesCapacity())
-    {
-      while (min <= max)
-      {
-        //cout << "MIN: " <<  min << endl;
-        _ranges.erase(_ranges.begin() + min);
-        max--;
-      }
-    }
-    min--;
-
-    if (min != 0)
-    {
-      if (_ranges.at(min - 1).GetHI() >= range.GetLO() - 1)
-      {
-        //cout << "L" << endl;
-        _ranges.at(min).Set(_ranges.at(min - 1).GetLO(), _ranges.at(min).GetHI());
-        _ranges.erase(_ranges.begin() + min - 1);
-        min--;
-      }
-    }
-    //cout << (*this) << endl;
-    if (min != GetRangesCapacity() - 1)
-    {
-      if (_ranges.at(min + 1).GetLO() <= range.GetHI() + 1)
-      {
-        _ranges.at(min).Set(_ranges.at(min).GetLO(), _ranges.at(min + 1).GetHI());
-        _ranges.erase(_ranges.begin() + min + 1);
-        //cout << "R" << endl;
-      }
-    }
-    //cout << (*this) << endl;
-  }
-
-  /**
-     * @brief Method for shrinking intervals by interval
-     * 
-     * @param range Interval to shrink
-     */
-  void Shrink(const CRange &range)
-  {
-    //sort( _ranges.begin(), _ranges.end(), CRange::Compare);
-    auto it = lower_bound(_ranges.begin(), _ranges.end(), range, less_B_pointer);
-    int mx = (it - _ranges.begin());
-    it = lower_bound(_ranges.begin(), _ranges.end(), range, less_A_pointer);
-    int mn = (it - _ranges.begin() - 1);
-    //cout << range << " Rem: " << mn  << "." << mx << endl;
-
-    if (mn == mx)
-    {
-      if (range.GetLO() == _ranges.at(mx).GetLO())
-      {
-        if (range.GetHI() == _ranges.at(mx).GetHI())
+        if(list.size()==0)
         {
-          _ranges.erase(_ranges.begin() + mx);
+            return false;
+        }
+        CRange range = CRange(data,data);
+        auto startIterator = lower_bound(list.begin(),list.end(),range,LOCompareFunc);
+        auto endIterator = lower_bound(list.begin(),list.end(),range,HICompareFunc);
+        //cout << "start:" << startIterator-list.begin()<<endl << "end:" << endIterator-list.begin()<<endl;
+        
+        if (startIterator == endIterator) {
+            if (endIterator == list.end()) {
+                endIterator--;
+                startIterator--;
+            }
+            
+            if (startIterator->GetLo() <= data && endIterator->GetHi() >= data) 
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else if (endIterator < startIterator) {
+            return true;
         }
         else
         {
-          _ranges.at(mx).Set(range.GetHI() + 1, _ranges.at(mx).GetHI());
+            return false;
         }
-      }
-      else
-      {
-        long long hi = _ranges.at(mx).GetHI();
-        //cout << _ranges.at(mx).GetLO() << endl;
-        _ranges.at(mx).Set(_ranges.at(mx).GetLO(), range.GetLO() - 1);
-        if (range.GetHI() != hi)
-        {
-          CRange cr = CRange(range.GetHI() + 1, hi);
-          _ranges.insert(_ranges.begin() + mx + 1, cr);
-        }
-      }
     }
-    else if (mn < mx)
+    /**
+     * @brief check if some interval is contained between intervals.
+     * 
+     * @param range interval to check.
+     * @return true interval exist there.
+     * @return false interval not found
+     */
+    bool Includes(CRange range) const
     {
-
-      if (mn != -1)
-      {
-        if (range.GetLO() == _ranges.at(mn).GetLO())
-          _ranges.erase(_ranges.begin() + mn);
-        else if (range.GetLO() <= _ranges.at(mn).GetHI())
+        if(list.size()==0)
         {
-          _ranges.at(mn).Set(_ranges.at(mn).GetLO(), range.GetLO() - 1);
+            return false;
         }
-      }
+        auto startIterator = lower_bound(list.begin(),list.end(),range,LOCompareFunc);
+        auto endIterator = lower_bound(list.begin(),list.end(),range,HICompareFunc);
+        //cout << "start:" << startIterator-list.begin()<<endl << "end:" << endIterator-list.begin()<<endl<< "first:"<<startIterator->ToString()<<endl;
 
-      if (mx != GetRangesCapacity())
-      {
-        if (range.GetHI() == _ranges.at(mx).GetHI())
-        {
-          _ranges.erase(_ranges.begin() + mx);
+        if (startIterator == endIterator) {
+            if (endIterator == list.end()) {
+                endIterator--;
+                startIterator--;
+            }
+            if (startIterator->GetLo() <= range.GetLo() && endIterator->GetHi() >= range.GetHi()) 
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
-        else if (range.GetHI() >= _ranges.at(mx).GetLO())
-        {
-          _ranges.at(mx).Set(range.GetHI() + 1, _ranges.at(mx).GetHI());
+        else if (endIterator < startIterator) {
+            return true;
         }
-      }
-
-      for (int i = mn + 1; i < mx; i++)
-        _ranges.erase(_ranges.begin() + mn + 1);
+        else
+        {
+            return false;
+        }
     }
-  }
+    /**
+     * @brief return string representation of interval.
+     * 
+     * @return string strig representation.
+     */
+    string ToString() const
+    {
+        string toReturn = "";
+        for(size_t i = 0; i < list.size(); i++)
+        {
+            toReturn += list.at(i).ToString();
+            if(i < list.size()-1)
+            {toReturn+=",";}
+        }
+        return toReturn;
+    }
+    /**
+     * @brief can add CRange throwgh += operator.
+     * 
+     * @param range range to add.
+     * @return CRangeList& 
+     */
+    CRangeList & operator +=(const CRange & range)
+    {
+        Insert(range);
+        return *this;
+    }
+    /**
+     * @brief can add CRangeList of Cranges throwgh += operator.
+     * 
+     * @param range CRangeList to add
+     * @return CRangeList& 
+     */
+    CRangeList & operator +=(const CRangeList & range)
+    {
+        for(size_t i = 0; i < range.list.size(); i++)
+        {
+            this->Insert(range.list.at(i));
+        }
+        
+        return *this;
+    }
+    /**
+     * @brief can remove Crange from CRangeList throwgh -=.
+     * 
+     * @param range Crange to remove
+     * @return CRangeList& 
+     */
+    CRangeList & operator -=(const CRange & range)
+    {
+        Remove(range);
+        return *this;
+    }
+    /**
+     * @brief can remove CRangeList of Cranges from CRangeList throwgh -=.
+     * 
+     * @param range list of CRanges to remove.
+     * @return CRangeList& 
+     */
+    CRangeList & operator -=(const CRangeList & range)
+    {
+        for(size_t i = 0; i < range.list.size(); i++)
+        {
+            this->Remove(range.list.at(i));
+        }
+        return *this;
+    }
+    /**
+     * @brief allow to get CrangeList to ostream.
+     * 
+     * @param out 
+     * @param rangeList 
+     * @return ostream& 
+     */
+    friend ostream & operator << (ostream& out, const CRangeList & rangeList)
+    {
+        out << "{" << rangeList.ToString() << "}";
+        return out;
+    }
+    /**
+     * @brief allow to compare two CRangeLists.
+     * 
+     * @param rangeList1 
+     * @param rangeList2 
+     * @return true lists are same.
+     * @return false lists arent same.
+     */
+    friend bool operator ==(const CRangeList & rangeList1,const CRangeList & rangeList2)
+    {
+        return rangeList1.list == rangeList2.list ? true : false;
+    }
+    /**
+     * @brief allow to compare two CRangeLists.
+     * 
+     * @param rangeList 
+     * @return true lists arent same.
+     * @return false lists are same.
+     */
+    friend bool operator !=(const CRangeList & rangeList1,const CRangeList & rangeList2)
+    {
+        return rangeList1.list == rangeList2.list ? false : true;
+    }
+    /**
+     * @brief allow to set CrangeList to specific CrangeList (copy).
+     * 
+     * @param rangeList 
+     * @return CRangeList& 
+     */
+    CRangeList & operator =(const CRangeList & rangeList)
+    {
+        //CRangeList lst = CRangeList();
+        this->list = vector<CRange>();
+        for(size_t i = 0; i < rangeList.list.size(); i++)
+        {
+            this->list.push_back(rangeList.list.at(i));
+        }
+        return *this;
+    }
+    /**
+     * @brief allow to set CRangeList directly with one value.
+     * 
+     * @param range 
+     * @return CRangeList& 
+     */
+    CRangeList & operator =(const CRange & range)
+    {
+        //CRangeList rangeList = CRangeList();
+        //(*this) = CRangeList();
+        this->list = vector<CRange>();
+        this->AddTest(range);
+        return *this;
+    }
+    /**
+     * @brief allow to SUM list with range by + operator.
+     * 
+     * @param rangeList list with data to SUM.
+     * @param range1 range to SUM to list.
+     * @return CRangeList 
+     */
+    friend CRangeList operator + (CRangeList rangeList,const CRange & range1)
+    {
+        rangeList.Insert(range1);
+        return rangeList;
+    }
+    /**
+     * @brief allow to SUM multiple lists by + operator.
+     * 
+     * @param rangeList1 list with data to SUM.
+     * @param rangeList2 list with data to SUM.
+     * @return CRangeList 
+     */
+    friend CRangeList operator + (CRangeList & rangeList1,CRangeList & rangeList2)
+    {
+        for(size_t i = 0; i < rangeList2.list.size(); i++)
+        {
+            rangeList1.Insert(rangeList2.list.at(i));
+        }
+        return rangeList1;
+    }
+    /**
+     * @brief allow to remove range from list by - operator.
+     * 
+     * @param rangeList list with data.
+     * @param range1 data to remove.
+     * @return CRangeList 
+     */
+    friend CRangeList operator - (CRangeList rangeList,const CRange & range1)
+    {
+        rangeList.Remove(range1);
+        return rangeList;
+    }
+    /**
+     * @brief allow to remove list from list by - operator;
+     * 
+     * @param rangeList1 list with data.
+     * @param rangeList2 list with data to remove.
+     * @return CRangeList 
+     */
+    friend CRangeList operator - (CRangeList rangeList1,CRangeList & rangeList2)
+    {
+        for(size_t i = 0; i < rangeList2.list.size(); i++)
+        {
+            rangeList1.Remove(rangeList2.list.at(i));
+        }
+        return rangeList1;
+    }
+  private:
+    /**
+     * @brief vector with Cranges
+     * 
+     */
+    std::vector<CRange> list;
+    /**
+     * @brief private method to Insert Crange to vector
+     * 
+     * @param range 
+     */
+    void Insert(CRange range)
+    {
+        // find start and end iterator
+        auto startIterator = lower_bound(list.begin(),list.end(),range,LOCompareFunc);
+        auto endIterator = lower_bound(list.begin(),list.end(),range,HICompareFunc);
+
+        
+        
+        // dont insert when range and iterator are same
+        if (!(startIterator >= list.begin() && startIterator < list.end() && range == *startIterator)) 
+        {
+            list.insert(startIterator,range);
+        }
+
+        // erase unwanted ranges between
+        list.erase(startIterator,endIterator);
+        
+
+        // lower_bound after insetr
+        auto it = lower_bound(list.begin(),list.end(),range,LOCompareFunc);
+
+        cout << "------" << *this<< endl;
+        // correct lo and hi
+        if(list.end() > it + 1)
+        {
+            if((it+1)->GetLo()-1<=range.GetHi())
+            {
+                // hi correction
+                it->SetHi((it+1)->GetHi());
+                list.erase(it+1);
+            }
+        }
+        if (it > list.begin()) {
+            if((it-1)->GetHi()+1>=range.GetLo())
+            {
+                // lo correction
+                it->SetLo((it-1)->GetLo());
+                list.erase(it-1);
+            }
+        }
+
+    }
+    /**
+     * @brief private method to remove Crange from vector
+     * 
+     * @param range 
+     */
+    void Remove(CRange range)
+    {
+        // when is nothing in list there is nothing to remove
+        if(list.size()==0)
+        {
+            return;
+        }
+
+        // find start and end iterator
+        auto startIterator = lower_bound(list.begin(),list.end(),range,LOCompareFunc);
+        auto endIterator = lower_bound(list.begin(),list.end(),range,HICompareFunc);
+        
+        // commented debug
+        //cout<<"startIterator:"<<startIterator->ToString()<<endl<<"endIterator:"<<endIterator->ToString()<<endl;
+        //cout << "start:" << startIterator-list.begin() << endl << "end:"<<endIterator-list.begin()<<endl;
+        
+        if(startIterator > endIterator)
+        {
+            // special case when range to remove is inside another element so element needed to be splitte
+            long long hi = 0;
+            if(endIterator <= list.end())
+            {
+                hi = endIterator->GetHi();
+            }
+            if( endIterator->GetHi() > range.GetHi())
+            {
+                // split element
+                endIterator->SetHi(range.GetLo()-1);
+                if(startIterator <= list.begin())
+                {
+                    list.insert(startIterator,CRange(range.GetHi()+1,hi));
+                }
+            }
+            else
+            {
+                // just repair without split
+                endIterator->SetHi(range.GetLo()-1);
+            }
+        }
+        else if(startIterator == endIterator)
+        {
+            // there range to remove could be through one or two elements of vector
+            if(startIterator == list.end())
+            {
+                // iterator is out of range
+                if((startIterator-1)->GetLo() < range.GetLo() && (startIterator-1)->GetLo() <= range.GetHi() && (startIterator-1)->GetHi() <= range.GetHi() && (startIterator-1)->GetHi() > range.GetLo())
+                {
+                    (startIterator-1)->SetHi(range.GetLo()-1);
+                    return;
+                } 
+                return;
+            }
+            else if(startIterator->GetLo() >= range.GetLo() && startIterator->GetHi() <= range.GetHi())
+            {
+                list.erase(startIterator);
+                return;
+            }
+
+            // hi is needed for correction
+            long long hi = startIterator->GetHi();
+
+
+            if(startIterator->GetLo()>range.GetLo())
+            {
+                if(startIterator > list.begin())
+                {
+                    if(startIterator->GetLo() > range.GetLo() && (startIterator-1)->GetHi() >= range.GetLo())
+                    {
+                        (startIterator-1)->SetHi(range.GetLo()-1);
+                    }                
+                }
+                startIterator->SetLo(range.GetLo()-1);
+            }
+            if(range.GetHi() < hi)
+            {
+                startIterator->SetLo(range.GetHi()+1);
+                startIterator->SetHi(hi);
+            }
+        }
+        else
+        {
+            // case where could be many ranges between two iterators
+            // first correction of Lo and Hi values of border values
+            if(startIterator > list.begin())
+            {
+                if((startIterator-1)->GetLo() < range.GetLo() && (startIterator-1)->GetHi() >= range.GetLo())
+                {
+                    (startIterator-1)->SetHi(range.GetLo()-1);
+                }                
+            }
+
+            if (endIterator != list.end()) {
+                if(endIterator->GetLo() <= range.GetHi())
+                {
+                    endIterator->SetLo(range.GetHi()+1);
+                }
+            }
+
+            // then remove unwanted values
+            if(endIterator != list.end())
+            {
+                if(endIterator->GetHi() == range.GetHi())
+                {
+                    if(endIterator+1 > list.end())
+                    {
+                        list.erase(startIterator,endIterator);
+                    }
+                    else
+                    {
+                        list.erase(startIterator,endIterator+1);
+                    }
+                }
+                else
+                {
+                    list.erase(startIterator,endIterator);
+                }
+            }
+            else
+            {
+                if(startIterator < list.begin())
+                    startIterator = list.begin();
+                if (endIterator > list.end())
+                    endIterator = list.end();
+                
+                list.erase(startIterator,endIterator);
+            }
+        }
+    }
 };
 
 /**
- * @brief Operator overload for + of two intervals which makes list of them
+ * @brief operator witch allow to SUM two Cranges and create list
  * 
- * @param l First Interval
- * @param r Second Interval
- * @return CRangeList Lists of intervals
+ * @param range1
+ * @param range2 
+ * @return CRangeList 
  */
-CRangeList operator+(const CRange &l, const CRange &r)
+CRangeList operator + (const CRange & range1 ,const CRange & range2)
 {
-  CRangeList cl;
-  cl += l;
-  cl += r;
-  return cl;
+    CRangeList newList = CRangeList();
+    newList.AddTest(range1);
+    newList.AddTest(range2);
+    return newList;
+}
+/**
+ * @brief operator witch allow to create list of first range and then remove second range.
+ * 
+ * @param range1 
+ * @param range2 
+ * @return CRangeList 
+ */
+CRangeList operator - (const CRange & range1 ,const CRange & range2)
+{
+    CRangeList newList = CRangeList();
+    newList.AddTest(range1);
+    newList.RemoveTest(range2);
+    return newList;
 }
 
-/**
- * @brief Operator overload for - of two intervals which makes list of them
- * 
- * @param l First Interval
- * @param r Second Interval
- * @return CRangeList Lists of intervals
- */
-CRangeList operator-(const CRange &l, const CRange &r)
-{
-  CRangeList cl;
-  cl += l;
-  cl -= r;
-  return cl;
-}
+
 
 #ifndef __PROGTEST__
-string toString(const CRangeList &x)
+
+string             toString                                ( const CRangeList& x )
 {
   ostringstream oss;
   oss << x;
-  return oss.str();
+  return oss . str ();
 }
+
+
+
+
+
+#endif /* __PROGTEST__ */
+
 
 void TST()
 {
@@ -1275,7 +1373,8 @@ int main(void)
   //TST();
   CRangeList a, b, c;
   assert(sizeof(CRange) <= 2 * sizeof(long long));
-  c -= CRange(-9223372036854775808, 9223372036854775808);
+  c -= CRange(LLONG_MIN, LLONG_MAX);
+  /*
   for (int i = 0; i < 10000; i++)
     c += CRange(3 * i, 3 * i + 1);
   c += CRange(25, 100);
@@ -1283,7 +1382,7 @@ int main(void)
   c += CRange(335, LLONG_MAX);
   c += CRange(LLONG_MIN, LLONG_MAX);
   cout << toString(c) << endl;
-
+*/
   TST();
   TST2();
   TST3();
@@ -1386,17 +1485,8 @@ int main(void)
   cout << toString(b) << endl;
   assert(toString(b) == "{<0..9>,<20..30>,<40..50>,<60..69>,<81..100>,<160..169>,<171..180>,<251..300>}");
 
-/*
-#ifdef EXTENDED_SYNTAX
-  CRangeList x{{5, 20}, {150, 200}, {-9, 12}, {48, 93}};
-  assert(toString(x) == "{<-9..20>,<48..93>,<150..200>}");
-  ostringstream oss;
-  oss << setfill('=') << hex << left;
-  for (const auto &v : x + CRange(-100, -100))
-    oss << v << endl;
-  oss << setw(10) << 1024;
-  assert(oss.str() == "-100\n<-9..20>\n<48..93>\n<150..200>\n400=======");
-#endif /* EXTENDED_SYNTAX */
   return 0;
 }
-#endif /* __PROGTEST__ */
+
+
+
