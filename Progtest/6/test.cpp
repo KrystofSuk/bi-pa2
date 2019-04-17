@@ -60,6 +60,8 @@ public:
   }
 
   CComputer(const CComputer& f) {
+    _parts.clear();
+    _ips.clear();
     for (size_t i = 0; i < f._parts.size(); i++)
     {
       CPart * n = f._parts.at(i)->Clone(); 
@@ -71,8 +73,31 @@ public:
     }
     _last = f._last;
     _name = f._name;
-    cout << "Copy" << endl;
   }   
+
+  CComputer& operator=(const CComputer& f)
+  {
+      if (this != &f) { 
+        for (auto it = begin(_parts); it != end(_parts); ++it)
+        {
+          delete *it;
+        }
+        _parts.clear();
+        _ips.clear();
+        for (size_t i = 0; i < f._parts.size(); i++)
+        {
+          CPart * n = f._parts.at(i)->Clone(); 
+          _parts.push_back(n);
+        }
+        for (size_t i = 0; i < f._ips.size(); i++)
+        {
+          _ips.push_back(f._ips.at(i));
+        }
+        _last = f._last;
+        _name = f._name;
+      }
+      return *this;
+  }
 
   CComputer & AddComponent(const CPart & p)
   {
@@ -96,38 +121,47 @@ public:
   }
 
   void Print(ostream &os, string const & tmp) const{
-    os << "Host: " <<  _name << endl;
-    for (auto it = begin(_ips); it != end(_ips); ++it)
-    {
-      os << tmp << "+-" << (*it) << endl;
+    os << tmp << "Host: " << _name << endl; 
+    if(tmp == "+-"){
+      for(size_t i = 0; i < _ips.size(); i++)
+        os << "| +-" << _ips.at(i) << endl; 
+      for(size_t i = 0; i <  _parts.size(); i++){
+        if(i < _parts.size() -1){
+          _parts.at(i) -> Print(os, "| +-");
+        }else{
+          _parts.at(i) -> Print(os, "| \\-");
+        }
+      }
+    }else{
+      for(size_t i = 0; i < _ips.size(); i++)
+        os << "  +-" << _ips.at(i) << endl; 
+      for(size_t i = 0; i <  _parts.size(); i++){
+        if(i < _parts.size() -1){
+          _parts.at(i) -> Print(os, "  +-");
+        }else{
+          _parts.at(i) -> Print(os, "  \\-");
+        }
+      }
+
     }
-    for (auto it = begin(_parts); it != end(_parts) - 1; ++it)
-    {
-      os << tmp << "+-";
-      (*it) -> Print(os, "");
-    }
-    os << "\\-";
-    _parts.at(_parts.size()-1) -> Print(os, "");
   }
 
   friend ostream &operator<<(ostream &os, const CComputer &computer)
   {    
-    os << "Host: " <<  computer._name << endl;
-    string tmp;
-    for (auto it = begin(computer._ips); it != end(computer._ips); ++it)
-    {
-      os << tmp << "+-" << (*it) << endl;
+    os << "Host: " << computer._name << endl; 
+    for(size_t i = 0; i < computer._ips.size(); i++)
+      os << "+-" <<computer._ips.at(i) << endl; 
+    for(size_t i = 0; i < computer._parts.size(); i++){
+      if(i < computer._parts.size() -1){
+        computer._parts.at(i) -> Print(os, "+-");
+      }else{
+        computer._parts.at(i) -> Print(os, "\\-");
+      }
     }
-    for (auto it = begin(computer._parts); it != end(computer._parts) - 1; ++it)
-    {
-      os << tmp << "+-" << (**it);
-    }
-    os << "\\-" << (*computer._parts.at(computer._parts.size()-1));
     return os;
   }
 
   ~CComputer(){
-    cout<< "Del" << endl;
     for (auto it = begin(_parts); it != end(_parts); ++it)
     {
       delete *it;
@@ -168,15 +202,13 @@ public:
   friend ostream &operator<<(ostream &os, const CNetwork &network)
   {
     os << "Network: " << network._name << endl;
-    string t = "| ";
-    for (auto it = begin(network._comps); it != end(network._comps)-1; ++it)
-    {
-      os <<  "+-";
-      it -> Print(os, t);
+    for(size_t i = 0; i < network._comps.size(); i++){
+      if(i < network._comps.size() - 1){
+        network._comps.at(i).Print(os, "+-");
+      }else{
+        network._comps.at(i).Print(os, "\\-");
+      }
     }
-    t = "  ";
-    os << "\\-";
-    (network._comps.at(network._comps.size()-1)) . Print(os,t);
     return os;
   }
 
@@ -195,7 +227,7 @@ public:
     _freq = f;
   }
   void Print(ostream &os, string sep) const{
-     os<< sep  << "CPU, " << _size << " cores @ " << _freq << "MHz" << endl;
+    os << sep << "CPU, " << _size << " cores @ " << _freq << "MHz" << endl;
   }
   CCPU * Clone () const{
     return new CCPU (*this);
@@ -209,7 +241,7 @@ class CMemory : public CPart
 public:
   CMemory(const int &s) : CPart(s) {}
   void Print(ostream &os, string sep) const{
-    os<< sep  << "Memory, " << _size << " MiB" << endl;
+    os << sep << "Memory, " << _size << " MiB" << endl;
   }
   CMemory * Clone () const{
     return new CMemory (*this);
@@ -229,7 +261,7 @@ public:
     _name = n;
   }
   void Print(ostream &os, string sep) const{
-    os << sep << _size << " GiB, " << _name << endl;
+    os << sep << ": " << _size << " GiB, " << _name  << endl;
   }
   CPartition * Clone () const{
     return new CPartition (*this);
@@ -256,17 +288,96 @@ public:
     return *this;
   }
   void Print(ostream &os, string sep) const{
+    string typ = "";
     if(_type == MAGNETIC)
-      os << sep << "HDD, " << _size << " GiB"  << endl;
+      typ = "HDD";
     if(_type == SSD)
-      os << sep <<  "SSD, " << _size << " GiB" << endl;
-    int t = 0;
-    for (auto it = begin(_parts); it != end(_parts)-1; ++it)
-    {
-      os << sep << "  " << "+-[" << t << "]: " << *it;
-      t++;
+      typ = "SSD";
+    os << sep << typ << ", " << _size << " GiB" << endl;
+    if(sep == "+-"){
+      for(size_t i = 0; i < _parts.size(); i++){
+        os << "| ";
+        if(i < _parts.size() -1){
+          stringstream ss;
+          ss << "+-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }else{
+          stringstream ss;
+          ss << "\\-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }
+      }
     }
-    os << sep << "  " << "\\-[" << t << "]: " << (_parts.at(_parts.size()-1));
+    if(sep == "\\-"){
+      for(size_t i = 0; i < _parts.size(); i++){
+        os << "  ";
+        if(i < _parts.size() -1){
+          stringstream ss;
+          ss << "+-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }else{
+          stringstream ss;
+          ss << "\\-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }
+      }
+    }
+    if(sep == "| +-"){
+      for(size_t i = 0; i < _parts.size(); i++){
+        os << "| | ";
+        if(i < _parts.size() -1){
+          stringstream ss;
+          ss << "+-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }else{
+          stringstream ss;
+          ss << "\\-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }
+      }
+    }
+    if(sep == "| \\-"){
+      for(size_t i = 0; i < _parts.size(); i++){
+        os << "|   ";
+        if(i < _parts.size() -1){
+          stringstream ss;
+          ss << "+-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }else{
+          stringstream ss;
+          ss << "\\-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }
+      }
+    }
+    if(sep == "  +-"){
+      for(size_t i = 0; i < _parts.size(); i++){
+        os << "  | ";
+        if(i < _parts.size() -1){
+          stringstream ss;
+          ss << "+-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }else{
+          stringstream ss;
+          ss << "\\-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }
+      }
+    }
+    if(sep == "  \\-"){
+      for(size_t i = 0; i < _parts.size(); i++){
+        os << "    ";
+        if(i < _parts.size() -1){
+          stringstream ss;
+          ss << "+-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }else{
+          stringstream ss;
+          ss << "\\-[" << i << "]";
+          _parts.at(i).Print(os, ss.str());
+        }
+      }
+    }
   }
   CDisk * Clone () const{
     return new CDisk (*this);
@@ -327,17 +438,21 @@ int main(void)
          "  +-CPU, 4 cores @ 2500MHz\n"
          "  \\-Memory, 8000 MiB\n";
   cout << endl;
+  cout << endl << "------" << endl;
   cout << toString(n) << endl;
-  cout << toString(CComputer("progtest.fit.cvut.cz").AddAddress("147.32.232.142").AddComponent(CCPU(8, 2400)).AddComponent(CCPU(8, 1200)).AddComponent(CDisk(CDisk::MAGNETIC, 1500).AddPartition(50, "/").AddPartition(5, "/boot").AddPartition(1000, "/var")).AddComponent(CDisk(CDisk::SSD, 60).AddPartition(60, "/data")).AddComponent(CMemory(2000)).AddComponent(CMemory(2000))) << endl;
+  cout << endl << "------" << endl;
+  cout << toString(CComputer("edux.fit.cvut.cz").AddAddress("147.32.232.158").AddComponent(CCPU(4, 1600)).AddComponent(CMemory(4000)).AddComponent(CDisk(CDisk::MAGNETIC, 2000).AddPartition(100, "/").AddPartition(1900, "/data"))) << endl;
   CNetwork x = n;
   auto c = x.FindComputer("imap.fit.cvut.cz");
-  cout << toString(*c)<< endl;
+  cout << endl << "------" << endl;
+  cout << toString(*c);
+  cout << "------" << endl;
   cout << 
          "Host: imap.fit.cvut.cz\n"
          "+-147.32.232.238\n"
          "+-2001:718:2:2901::238\n"
          "+-CPU, 4 cores @ 2500MHz\n"
-         "\\-Memory, 8000 MiB\n" << endl;
+         "\\-Memory, 8000 MiB\n";
   assert(toString(n) ==
          "Network: FIT network\n"
          "+-Host: progtest.fit.cvut.cz\n"
@@ -427,6 +542,13 @@ int main(void)
          "  +-2001:718:2:2901::238\n"
          "  +-CPU, 4 cores @ 2500MHz\n"
          "  \\-Memory, 8000 MiB\n");
+
+
+  CComputer c1 = CComputer("cz").AddAddress("147.32.232.158").AddComponent(CCPU(4, 1600)).AddComponent(CMemory(4000)).AddComponent(CDisk(CDisk::MAGNETIC, 2000).AddPartition(100, "/").AddPartition(1900, "/data"));
+  CComputer c2("C2");
+  c2 = c1;
+  
+  cout << toString(c2) << endl;
   return 0;
 }
 #endif /* __PROGTEST__ */
