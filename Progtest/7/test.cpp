@@ -35,71 +35,103 @@ int doMath(int x, int y)
   return 0;
 }
 
-
 template <typename _T, typename _E>
 class CRoute
 {
 private:
-  multimap<pair<string, string>, int > _nodes; 
-  set<string> _node;
-  vector<_E> _paths;
+  multimap<_T, int> _nodes;
+  set<_T> _node;
+  vector<pair<pair<_T, _T>, _E>> _paths;
+
 public:
-  CRoute(){}
-  ~CRoute(){}
-  CRoute &Add(const _T & u1, const _T & u2, const _E & h)
+  CRoute() {}
+  ~CRoute() {}
+  CRoute &Add(const _T &u1, const _T &u2, const _E &h)
   {
     cout << "Adding" << endl;
-    _paths.push_back(h);
-    _nodes.insert(make_pair(make_pair(u1, u2),_paths.size() - 1));
+    _paths.push_back(make_pair(make_pair(u1, u2), h));
+    _nodes.insert(make_pair(u1, _paths.size() - 1));
+    _nodes.insert(make_pair(u2, _paths.size() - 1));
     _node.insert(u1);
     _node.insert(u2);
     return (*this);
   }
-  list<string> Find(_T u1, _T u2, std::function<bool(const _E &)> f = [](const _E &t) {return true;})
+
+  list<_T> Find(_T u1, _T u2, std::function<bool(const _E &)> f = [](const _E &t) {
+    return true;
+  })
   {
-    
+    if(u1 == u2){
+      list<_T> n;
+      n.push_back(u1);
+      return n;
+    }
+
+    list<_T> t;
+    set<_T> v;
+    queue<_T> proc;
+    v.insert(u1);
+    t.push_back(u1);
+    for (auto it = _nodes.equal_range(u1).first; it != _nodes.equal_range(u1).second; ++it)
+    {
+      if (f(_paths.at(it->second).second) )
+      {
+        if (_paths.at(it->second).first.first != u1)
+        {
+          proc.push(_paths.at(it->second).first.first);
+          //FindRec(_paths.at(it->second).first.first, u2,  v, f);
+        }
+        if (_paths.at(it->second).first.second != u1)
+        {
+          proc.push(_paths.at(it->second).first.second);
+          //FindRec(_paths.at(it->second).first.second, u2, v, f);
+        }
+      }
+    }
+    int max = -1;
+    while (!proc.empty())
+    {
+      v.insert(proc.front());
+      list<_T> n;
+      n = Find(proc.front(), u2, f);
+      
+      if(n.back() == u2){
+        cout << "Founded" << endl;
+      }
+      
+      proc.pop();
+    }
+    cout << "*******" << endl;
+    if (t.back() == u2)
+    {
+      //throw(NoRouteException());
+    }
+    for (auto p : t)
+    {
+      cout << p << endl;
+    }
+      /*
+      for (auto it = _nodes.begin(); it != _nodes.end(); ++it){
+        std::cout << it->first << "::" << _paths.at(it->second).second << endl;
+      }
+      for(auto it = _node.begin(); it != _node.end(); it++)
+      {
+          cout << *it << endl;
+      }
+      */
+   list<_T> myList(t.begin(), t.end());
+    return myList;
+  }
+
+  /*
     for (auto it = _nodes.begin(); it != _nodes.end(); ++it){
-      std::cout << it->first.first <<"-"<<it->first.second<< "::" << _paths.at(it->second)  << endl;
+      std::cout << it->first << "::" << _paths.at(it->second).second << endl;
     }
     for(auto it = _node.begin(); it != _node.end(); it++)
     {
         cout << *it << endl;
     }
-
-
-    list<string> t;
-    int pred[_node.size()], dist[_node.size()]; 
-    list<int> queue;
-    bool visited[_node.size()]; 
-    for (size_t i = 0; i < _node.size(); i++) { 
-        visited[i] = false; 
-        dist[i] = 2147483647; 
-        pred[i] = -1; 
-    }  
-    visited[src] = true; 
-    dist[src] = 0; 
-    queue.push_back(src); 
-  
-    // standard BFS algorithm 
-    while (!queue.empty()) { 
-        int u = queue.front(); 
-        queue.pop_front(); 
-        for (int i = 0; i < adj[u].size(); i++) { 
-            if (visited[adj[u][i]] == false) { 
-                visited[adj[u][i]] = true; 
-                dist[adj[u][i]] = dist[u] + 1; 
-                pred[adj[u][i]] = u; 
-                queue.push_back(adj[u][i]); 
-  
-                // We stop BFS when we find 
-                // destination. 
-                if (adj[u][i] == dest) 
-                   return true; 
-            } 
-        } 
-    } 
-    return t;
-  }
+    */
 };
 
 #ifndef __PROGTEST__
@@ -117,11 +149,10 @@ public:
   string m_Company;
   int m_Speed;
 
-  
   friend ostream &operator<<(ostream &os,
                              const CTrain &x)
   {
-    os << x.m_Company << "/" << x.m_Speed ;
+    os << x.m_Company << "/" << x.m_Speed;
     return os;
   }
 };
@@ -196,12 +227,14 @@ int main(void)
       .Add("Paris", "Marseille", CTrain("SNCF", 300))
       .Add("Paris", "Dresden", CTrain("SNCF", 250));
   list<string> r1 = lines.Find("Berlin", "Linz");
+  cout << "--------" << endl
+       << toText(r1) << endl;
   assert(toText(r1) == "Berlin > Prague > Linz");
-  /*
 
   list<string> r2 = lines.Find("Linz", "Berlin");
+  cout << "--------" << endl
+       << toText(r2) << endl;
   assert(toText(r2) == "Linz > Prague > Berlin");
-
   list<string> r3 = lines.Find("Wien", "Berlin");
   assert(toText(r3) == "Wien > Prague > Berlin");
 
@@ -218,6 +251,9 @@ int main(void)
   assert(toText(r7) == "Wien > Prague > Munchen");
 
   list<string> r8 = lines.Find("Munchen", "Munchen");
+  
+  cout << "--------" << endl
+       << toText(r8) << endl;
   assert(toText(r8) == "Munchen");
 
   list<string> r9 = lines.Find("Marseille", "Prague");
@@ -246,6 +282,8 @@ int main(void)
   catch (const NoRouteException &e)
   {
   }
+
+  /*
   */
   return 0;
 }
